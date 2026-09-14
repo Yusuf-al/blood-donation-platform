@@ -1,0 +1,15 @@
+model BloodRequestStatusHistory {
+  id          String             @id @default(uuid())
+  requestId   String
+  oldStatus   BloodRequestStatus?
+  newStatus   BloodRequestStatus
+  changedById String
+  reason      String?
+
+  request     BloodRequest @relation(fields: [requestId], references: [id])
+ 
+  createdAt   DateTime @default(now())
+
+  @@index([requestId, createdAt])
+
+}

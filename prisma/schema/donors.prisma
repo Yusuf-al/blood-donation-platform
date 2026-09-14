@@ -1,0 +1,24 @@
+model DonorProfile {
+  id                    String             @id @default(uuid())
+  userId                String             @unique
+  bloodGroup            BloodGroup
+  dateOfBirth           DateTime?
+  city                  String
+  area                  String?
+  latitude              Decimal?           @db.Decimal(10, 7)
+  longitude             Decimal?           @db.Decimal(10, 7)
+  lastDonationDate      DateTime?
+  availabilityStatus    AvailabilityStatus @default(AVAILABLE)
+  eligibilityVerified   Boolean            @default(false)
+
+  user                  User @relation(fields: [userId], references: [id])
+  assignments           DonationAssignment[]
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([bloodGroup, availabilityStatus])
+  @@index([city, bloodGroup])
+
+  @@map("donors")
+}

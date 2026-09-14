@@ -1,0 +1,92 @@
+enum UserRole {
+  REQUESTER
+  DONOR
+  ADMIN
+}
+
+enum BloodGroup {
+  A_POSITIVE
+  A_NEGATIVE
+  B_POSITIVE
+  B_NEGATIVE
+  AB_POSITIVE
+  AB_NEGATIVE
+  O_POSITIVE
+  O_NEGATIVE
+}
+
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+enum UserStatus {
+    ACTIVE
+    BLOCKED
+    DELETED
+    SUSPENDED
+}
+
+enum AvailabilityStatus {
+  AVAILABLE
+  UNAVAILABLE
+  TEMPORARILY_UNAVAILABLE
+}
+
+enum RequestUrgency {
+  NORMAL
+  URGENT
+  CRITICAL
+}
+
+enum BloodRequestStatus {
+  PENDING
+  VERIFIED
+  MATCHING
+  DONOR_ASSIGNED
+  IN_PROGRESS
+  FULFILLED
+  CANCELLED
+  REJECTED
+}
+
+enum AssignmentStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+
+
+enum DonationStatus {
+  SCHEDULED
+  COMPLETED
+  VERIFIED
+  CANCELLED
+}
+
+enum PaymentProvider {
+  BKASH
+  SSLCOMMERZ
+  STRIPE
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CARD
+  MOBILE_BANKING
+  BANK_TRANSFER
+}

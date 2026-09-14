@@ -1,0 +1,24 @@
+model Payment {
+  id                String          @id @default(uuid())
+  userId            String
+  requestId         String          @unique
+  provider          PaymentProvider
+  transactionId     String          @unique
+  amount            Decimal         @db.Decimal(12, 2)
+  currency          String          @default("BDT")
+  status            PaymentStatus   @default(PENDING)
+  gatewayResponse   Json?
+  paidAt            DateTime?
+  refundedAt        DateTime?
+
+  user              User @relation(fields: [userId], references: [id])
+  request           BloodRequest @relation(fields: [requestId], references: [id])
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([status, createdAt])
+
+  @@map("payments")
+}

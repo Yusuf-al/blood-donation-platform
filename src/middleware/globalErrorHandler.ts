@@ -1,0 +1,43 @@
+import { NextFunction, Request, Response } from "express";
+import httpStatus from "http-status";
+import { Prisma } from "../../generated/prisma/client";
+import AppError from "../errors/AppError";
+
+export const globalErrorHandler = (
+  err: any,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  let statusCode: number = httpStatus.INTERNAL_SERVER_ERROR;
+  let message: string = "Something went wrong!";
+
+  if (err instanceof AppError) {
+    statusCode = err.statusCode;
+    message = err.message;
+  } else if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    if (err.code === "P2025") {
+      statusCode = httpStatus.NOT_FOUND;
+      message = "Resource not found";
+    } else if (err.code === "P2002") {
+      statusCode = httpStatus.CONFLICT;
+      message = `Duplicate value for: ${err.meta?.target}`;
+    } else if (err.code === "P2003") {
+      statusCode = httpStatus.CONFLICT;
+      message = `Foregin kew constrain failed`;
+    } else {
+      message = err.message;
+    }
+  } else if (err instanceof Prisma.PrismaClientValidationError) {
+    ((statusCode = httpStatus.BAD_REQUEST),
+      (message = "Incorrect fields or missing fields"));
+  } else if (err instanceof Error) {
+    message = err.message;
+  }
+
+  res.status(statusCode).json({
+    success: false,
+    message: message,
+    stack: (err as Error)?.stack || undefined,
+  });
+};

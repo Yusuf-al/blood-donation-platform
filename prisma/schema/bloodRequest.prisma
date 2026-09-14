@@ -1,0 +1,30 @@
+model BloodRequest {
+  id                  String             @id @default(uuid())
+  requesterId         String
+  bloodGroup          BloodGroup
+  requiredUnits       Int
+  hospitalName        String
+  hospitalLocation    String
+  contactPhone        String
+  urgency             RequestUrgency
+  requiredAt          DateTime
+  description         String?
+  status              BloodRequestStatus @default(PENDING)
+  verifiedAt          DateTime?
+  fulfilledAt         DateTime?
+  deletedAt           DateTime?
+
+  requester           User @relation("RequesterRequests", fields: [requesterId], references: [id])
+  assignments         DonationAssignment[]
+  payment             Payment?
+  statusHistory       BloodRequestStatusHistory[]
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([status, urgency])
+  @@index([bloodGroup, status])
+  @@index([requesterId, createdAt])
+  @@index([requiredAt])
+  @@index([deletedAt])
+}

@@ -1,0 +1,13 @@
+model DonationRecord {
+  id             String         @id @default(uuid())
+  assignmentId   String         @unique
+  status         DonationStatus
+  donatedAt      DateTime?
+  verifiedAt     DateTime?
+  notes          String?
+
+  assignment     DonationAssignment @relation(fields: [assignmentId], references: [id])
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
