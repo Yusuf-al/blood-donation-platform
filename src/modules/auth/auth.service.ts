@@ -25,11 +25,14 @@ const loginUserService = async (payload: Ilogin) => {
     throw AppError.unauthorized("Invalid email or password");
   }
 
-  const checkPass = await bcrypt.compare(password, user?.password as string);
+  const checkPass = await bcrypt.compare(
+    password,
+    user?.passwordHash as string,
+  );
 
   if (!checkPass) throw AppError.unauthorized("Invalid email or password");
 
-  if (user.isActive === "BLOCKED") {
+  if (user.status === "BLOCKED") {
     throw AppError.forbidden("Your account has been blocked. Contact support.");
   }
 
@@ -78,7 +81,7 @@ const tokenRefresh = async (token: string) => {
     },
   });
 
-  if (user.isActive === "BLOCKED") {
+  if (user.status === "BLOCKED") {
     throw AppError.forbidden("Your account has been blocked. Contact support.");
   }
 

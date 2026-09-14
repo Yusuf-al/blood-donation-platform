@@ -14,7 +14,7 @@ const userSearchableFields: (keyof Prisma.UserWhereInput)[] = [
 ];
 
 const allUser = async (query: IUserQuery) => {
-  const { searchTerm, role, isActive } = query;
+  const { searchTerm, role, status } = query;
 
   const { page, limit, skip, sortBy, sortOrder } = calculatePagination(query);
 
@@ -35,8 +35,8 @@ const allUser = async (query: IUserQuery) => {
     andConditions.push({ role });
   }
 
-  if (isActive) {
-    andConditions.push({ isActive });
+  if (status) {
+    andConditions.push({ status });
   }
 
   const whereConditions: Prisma.UserWhereInput =
