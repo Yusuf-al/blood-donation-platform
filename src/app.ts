@@ -6,6 +6,7 @@ import authRoutes from "./modules/auth/auth.route";
 import adminRoute from "./modules/admin/admin.route";
 import { sendResponse } from "./utils/sendResponse";
 import { globalErrorHandler } from "./middleware/globalErrorHandler";
+import donorRoutes from "./modules/donors/donors.routes";
 
 const app: Application = express();
 
@@ -23,6 +24,7 @@ app.get("/", async (req: Request, res: Response) => {
 app.use("/api/v1/user", userRoutes);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/admin", adminRoute);
+app.use("/api/v1/donor", donorRoutes);
 
 app.use((req: Request, res: Response) => {
   sendResponse(res, {

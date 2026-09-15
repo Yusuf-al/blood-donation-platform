@@ -7,6 +7,10 @@ import AppError from "../../errors/AppError";
 import httpStatus from "http-status";
 import { redisClient } from "../../lib/redis";
 import { transpoter } from "../../lib/nodemailer";
+import {
+  otpSendEmailTemplates,
+  registrationConfirmationTemplate,
+} from "../../utils/emailTemplates";
 
 const createUser = async (payload: IPayload) => {
   const { name, email, password, phone } = payload;
@@ -46,11 +50,13 @@ const createUser = async (payload: IPayload) => {
     },
   });
 
+  const html = otpSendEmailTemplates(otpValue, email, name);
+
   await transpoter.sendMail({
     from: config.email_sender,
     to: email,
     subject: "Email Varification",
-    html: `<div style="max-width:480px; margin:40px auto; background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 6px 20px rgba(0,0,0,.06);"> <div style="padding:24px; text-align:center; border-bottom:1px solid #eee;"> <h2 style="margin:0; color:#d62839;">FAST<span style="color:#263238;">Blood</span></h2> <p style="margin:6px 0 0; font-size:12px; color:#888;">Email Verification</p> </div> <div style="padding:30px;"> <h3 style="margin:0 0 12px; color:#172b4d;">Verify your email address</h3> <p style="font-size:14px; line-height:1.7; color:#5f6c7b;"> Hello <strong>${name}</strong>,<br /> Use the OTP below to verify <strong>${email}</strong>. </p> <div style="margin:24px 0; padding:20px; text-align:center; background:#fff1f2; border:1px solid #ffd9dd; border-radius:10px;"> <div style="font-size:32px; font-weight:700; letter-spacing:8px; color:#d62839;"> ${otpValue} </div> <p style="margin:10px 0 0; font-size:12px; color:#8b6b70;"> Expires in ${ExpireIn / 60} minutes </p> </div> <p style="margin:0; font-size:12px; line-height:1.6; color:#8a94a3;"> If you didn't request this verification, simply ignore this email. Never share your OTP. </p> </div> <div style="padding:18px; text-align:center; background:#fafbfc; font-size:11px; color:#9aa4b2;"> &copy; 2026 FASTBlood. All rights reserved. </div> </div>`,
+    html,
   });
 
   const user = await prisma.user.findUnique({
@@ -107,6 +113,14 @@ const verifyUserEmail = async (payload: any) => {
     data: {
       isVerified: true,
     },
+  });
+
+  const html = registrationConfirmationTemplate(isUserExist?.name!);
+  await transpoter.sendMail({
+    from: config.email_sender,
+    to: isUserExist?.email,
+    subject: "Registration Confirmation Email",
+    html,
   });
 
   return verifiedUser;

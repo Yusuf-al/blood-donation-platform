@@ -2,11 +2,9 @@ model DonorProfile {
   id                    String             @id @default(uuid())
   userId                String             @unique
   bloodGroup            BloodGroup
-  dateOfBirth           DateTime?
+  dateOfBirth           DateTime
   city                  String
-  area                  String?
-  latitude              Decimal?           @db.Decimal(10, 7)
-  longitude             Decimal?           @db.Decimal(10, 7)
+  address               String?
   lastDonationDate      DateTime?
   availabilityStatus    AvailabilityStatus @default(AVAILABLE)
   eligibilityVerified   Boolean            @default(false)
