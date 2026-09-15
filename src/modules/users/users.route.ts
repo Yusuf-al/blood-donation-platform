@@ -34,6 +34,8 @@ userRoutes.post(
   userController.createUserIntoDB,
 );
 
+userRoutes.post("/verify-email", userController.verifyEmailByOTP);
+
 userRoutes.get(
   "/me",
   auth([UserRole.ADMIN, UserRole.REQUESTER, UserRole.DONOR]),

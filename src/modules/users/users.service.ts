@@ -1,8 +1,11 @@
 import bcrypt from "bcryptjs";
 import config from "../../config";
+import crypto from "crypto";
 import { prisma } from "../../lib/prisma";
 import { IPayload, IUserPayload } from "./users.interface";
 import AppError from "../../errors/AppError";
+import httpStatus from "http-status";
+import { redisClient } from "../../lib/redis";
 
 const createUser = async (payload: IPayload) => {
   const { name, email, password, phone } = payload;
@@ -20,6 +23,18 @@ const createUser = async (payload: IPayload) => {
     password,
     Number(config.bcrypt_salt_round),
   );
+
+  const ExpireIn = 5 * 60;
+
+  const otpKey = `user-reg-otp:${email}`;
+  const otpValue = crypto.randomInt(100000, 1000000).toString();
+
+  await redisClient.set(otpKey, otpValue, {
+    expiration: {
+      type: "EX",
+      value: ExpireIn,
+    },
+  });
 
   const createdUser = await prisma.user.create({
     data: {
@@ -41,6 +56,52 @@ const createUser = async (payload: IPayload) => {
   });
 
   return user;
+};
+
+const verifyUserEmail = async (payload: any) => {
+  const otp = payload.otp;
+  const email = payload.email.trim().toLowerCase();
+
+  const isUserExist = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (isUserExist?.status === "BLOCKED") {
+    throw AppError.forbidden("User is blocked");
+  }
+
+  if (isUserExist?.isVerified) {
+    throw AppError.conflict("Email ALready Verified");
+  }
+
+  if (isUserExist?.isDeleted || isUserExist?.status === "DELETED") {
+    throw AppError.forbidden("User is Deleted");
+  }
+
+  const otpKey = `user-reg-otp:${email}`;
+
+  const redisOtp = await redisClient.get(otpKey);
+
+  if (!redisOtp) {
+    throw AppError.badRequest("Invalid OTP");
+  }
+
+  if (redisOtp !== otp) {
+    throw AppError.badRequest("OTP Does Not Match");
+  }
+
+  await redisClient.del(otpKey);
+
+  const verifiedUser = await prisma.user.update({
+    where: {
+      email: isUserExist?.email,
+    },
+    data: {
+      isVerified: true,
+    },
+  });
+
+  return verifiedUser;
 };
 
 const getUserProfile = async (payload: IUserPayload) => {
@@ -140,4 +201,5 @@ export const userService = {
   getUserProfile,
   updateUserProfile,
   UserProfile,
+  verifyUserEmail,
 };

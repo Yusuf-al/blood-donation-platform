@@ -16,6 +16,16 @@ const createUserIntoDB = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const verifyEmailByOTP = catchAsync(async (req: Request, res: Response) => {
+  const user = await userService.verifyUserEmail(req.body);
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "User Email verified successfully",
+    data: user,
+  });
+});
+
 const getMyProfile = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const userData = req.user;
@@ -79,4 +89,5 @@ export const userController = {
   getProfile,
   updateMyProfile,
   getAllUserFromDB,
+  verifyEmailByOTP,
 };
