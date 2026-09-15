@@ -1,5 +1,4 @@
 import jwt, { JwtPayload, SignOptions } from "jsonwebtoken";
-import { IJwtpayload } from "../modules/auth/auth.service";
 
 const createToken = (
   payload: JwtPayload,

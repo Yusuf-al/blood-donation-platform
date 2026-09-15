@@ -2,13 +2,13 @@ import { NextFunction, Request, Response } from "express";
 import httpStatus from "http-status";
 import { userService } from "./users.service";
 import { catchAsync } from "../../utils/catchAsync";
-import { sendRespone } from "../../utils/sendResponse";
+import { sendResponse } from "../../utils/sendResponse";
 import AppError from "../../errors/AppError";
 import { IUserPayload } from "./users.interface";
 
 const createUserIntoDB = catchAsync(async (req: Request, res: Response) => {
   const user = await userService.createUser(req.body);
-  sendRespone(res, {
+  sendResponse(res, {
     success: true,
     statusCode: httpStatus.CREATED,
     message: "User created successfully",
@@ -25,7 +25,7 @@ const getMyProfile = catchAsync(
     const myProfile = await userService.getUserProfile(
       userData as IUserPayload,
     );
-    sendRespone(res, {
+    sendResponse(res, {
       success: true,
       statusCode: httpStatus.OK,
       message: "User Information ",
@@ -40,7 +40,7 @@ const getProfile = catchAsync(async (req: Request, res: Response) => {
   if (!id) throw AppError.notFound("User not found");
 
   const myProfile = await userService.UserProfile(id as string);
-  sendRespone(res, {
+  sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
     message: "User Information ",
@@ -55,7 +55,7 @@ const updateMyProfile = catchAsync(async (req: Request, res: Response) => {
 
   const updatedData = await userService.updateUserProfile(userData, req.body);
 
-  sendRespone(res, {
+  sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
     message: "User Information updated successfully",
@@ -65,7 +65,7 @@ const updateMyProfile = catchAsync(async (req: Request, res: Response) => {
 const getAllUserFromDB = catchAsync(async (req: Request, res: Response) => {
   const userData = await userService.allUsers();
 
-  sendRespone(res, {
+  sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
     message: "All Users Informations ",

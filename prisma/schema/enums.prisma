@@ -4,6 +4,11 @@ enum UserRole {
   ADMIN
 }
 
+enum AuthProvider {
+  GOOGLE
+  CREDENTIAL
+}
+
 enum BloodGroup {
   A_POSITIVE
   A_NEGATIVE

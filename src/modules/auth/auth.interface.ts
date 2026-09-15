@@ -5,7 +5,6 @@ export interface Ilogin {
 
 export interface IJwtpayload {
   id: string;
-  name: string;
   email: string;
   role: string;
 }

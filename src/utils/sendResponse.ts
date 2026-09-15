@@ -15,7 +15,7 @@ type TRespone<T> = {
   path?: string;
 };
 
-export const sendRespone = <T>(res: Response, data: TRespone<T>) => {
+export const sendResponse = <T>(res: Response, data: TRespone<T>) => {
   res.status(data.statusCode).json({
     success: data.success,
     statusCode: data.statusCode,

@@ -5,6 +5,8 @@ import { userController } from "./users.controller";
 import { UserRole } from "../../../generated/prisma/enums";
 
 import { auth } from "../../middleware/auth";
+import { validateRequest } from "../../middleware/validateRequest";
+import { UserValidation } from "./user.validation";
 
 const userRoutes = Router();
 
@@ -26,8 +28,12 @@ userRoutes.get(
   userController.getAllUserFromDB,
 );
 
-userRoutes.post("/register", userController.createUserIntoDB);
-// userRoutes.get("/:id", userController.getProfile);
+userRoutes.post(
+  "/register",
+  validateRequest(UserValidation.userRegistrationZodSchema),
+  userController.createUserIntoDB,
+);
+
 userRoutes.get(
   "/me",
   auth([UserRole.ADMIN, UserRole.REQUESTER, UserRole.DONOR]),

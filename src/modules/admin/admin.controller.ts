@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { catchAsync } from "../../utils/catchAsync";
 import { adminServices } from "./admin.service";
-import { sendRespone } from "../../utils/sendResponse";
+import { sendResponse } from "../../utils/sendResponse";
 import httpStatus from "http-status";
 import { UserRole, UserStatus } from "../../../generated/prisma/client";
 import { IUserQuery } from "./admin.interface";
@@ -10,7 +10,7 @@ const allUsersFromDB = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const usersResult = await adminServices.allUser(req.query as IUserQuery);
 
-    sendRespone(res, {
+    sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
       message: "All Users",
@@ -29,7 +29,7 @@ const updateUserStatusIntoDB = catchAsync(
       userId as string,
     );
 
-    sendRespone(res, {
+    sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
       message: "User Status updated successfully",
@@ -49,7 +49,7 @@ const updateUserRoleIntoDB = catchAsync(
       userId as string,
     );
 
-    sendRespone(res, {
+    sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
       message: "User role updated successfully",

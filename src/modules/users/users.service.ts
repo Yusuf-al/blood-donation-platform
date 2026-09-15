@@ -1,195 +1,143 @@
-// import bcrypt from "bcryptjs";
-// import config from "../../config";
-// import { prisma } from "../../lib/prisma";
-// import { jwtUtils } from "../../utils/jwt";
-// import jwt from "jsonwebtoken";
-// import { UserRole } from "../../../generated/prisma/client";
-// import { IPayload, IUserPayload } from "./users.interface";
-// import AppError from "../../errors/AppError";
+import bcrypt from "bcryptjs";
+import config from "../../config";
+import { prisma } from "../../lib/prisma";
+import { IPayload, IUserPayload } from "./users.interface";
+import AppError from "../../errors/AppError";
 
-// const createUser = async (payload: IPayload) => {
-//   const { id, name, email, password, phone, profileImage, address, role } =
-//     payload;
+const createUser = async (payload: IPayload) => {
+  const { name, email, password, phone } = payload;
 
-//   const isUserExist = await prisma.user.findUnique({
-//     where: {
-//       email,
-//       id,
-//     },
-//   });
+  const isUserExist = await prisma.user.findUnique({
+    where: {
+      email,
+    },
+  });
 
-//   if (isUserExist)
-//     throw AppError.conflict("User with this email already exist");
+  if (isUserExist)
+    throw AppError.conflict("User with this email already exist");
 
-//   const hashedPassword = await bcrypt.hash(
-//     password,
-//     Number(config.bcrypt_salt_round),
-//   );
+  const hashedPassword = await bcrypt.hash(
+    password,
+    Number(config.bcrypt_salt_round),
+  );
 
-//   const createdUser = await prisma.user.create({
-//     data: {
-//       name,
-//       email,
-//       password: hashedPassword,
-//       phone,
-//       profileImage,
-//       role,
-//       address,
-//     },
-//   });
+  const createdUser = await prisma.user.create({
+    data: {
+      name,
+      email,
+      passwordHash: hashedPassword,
+      phone,
+    },
+  });
 
-//   const user = await prisma.user.findUnique({
-//     where: {
-//       id: createdUser.id,
-//       email: createdUser.email || email,
-//     },
-//     omit: {
-//       password: true,
-//     },
-//   });
+  const user = await prisma.user.findUnique({
+    where: {
+      id: createdUser.id,
+      email: createdUser.email || email,
+    },
+    omit: {
+      passwordHash: true,
+    },
+  });
 
-//   return user;
-// };
+  return user;
+};
 
-// const getUserProfile = async (payload: IUserPayload) => {
-//   const userProfile = await prisma.user.findUnique({
-//     where: { id: payload.id },
-//     include: {
-//       properties: {
-//         select: {
-//           id: true,
-//           title: true,
-//           bedrooms: true,
-//           bathrooms: true,
-//           city: true,
-//           address: true,
-//           rent: true,
-//           status: true,
-//           rentalRequests: {
-//             select: {
-//               id: true,
-//               moveInDate: true,
-//               moveOutDate: true,
-//               totalPrice: true,
-//               status: true,
-//               tenant: {
-//                 select: {
-//                   name: true,
-//                   email: true,
-//                   phone: true,
-//                 },
-//               },
-//             },
-//           },
-//         },
-//       },
-//       rentalRequests: {
-//         include: {
-//           property: {
-//             select: {
-//               title: true,
-//               city: true,
-//             },
-//           },
-//         },
-//       },
-//       tenantPayments: {
-//         include: {
-//           property: true,
-//         },
-//       },
-//     },
-//     omit: {
-//       password: true,
-//       createdAt: true,
-//       updatedAt: true,
-//     },
-//   });
+const getUserProfile = async (payload: IUserPayload) => {
+  const userProfile = await prisma.user.findUnique({
+    where: { id: payload.id },
 
-//   if (!userProfile) throw AppError.notFound("User not found");
+    omit: {
+      passwordHash: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
 
-//   return userProfile;
-// };
+  if (!userProfile) throw AppError.notFound("User not found");
 
-// const UserProfile = async (payload: string) => {
-//   const id = payload;
+  return userProfile;
+};
 
-//   const userProfile = await prisma.user.findUnique({
-//     where: { id },
-//   });
+const UserProfile = async (payload: string) => {
+  const id = payload;
 
-//   if (!userProfile) throw AppError.notFound("User not found");
+  const userProfile = await prisma.user.findUnique({
+    where: { id },
+  });
 
-//   return userProfile;
-// };
+  if (!userProfile) throw AppError.notFound("User not found");
 
-// const updateUserProfile = async (
-//   userdata: IUserPayload,
-//   payload: {
-//     email?: string;
-//     name?: string;
-//     phone?: string;
-//     address?: string;
-//   },
-// ) => {
-//   const { id: userId } = userdata;
-//   const { email, name, phone, address } = payload;
+  return userProfile;
+};
 
-//   const existingUser = await prisma.user.findUnique({
-//     where: {
-//       id: userId,
-//     },
-//   });
+const updateUserProfile = async (
+  userdata: IUserPayload,
+  payload: {
+    email?: string;
+    name?: string;
+    phone?: string;
+    address?: string;
+  },
+) => {
+  const { id: userId } = userdata;
+  const { email, name, phone, address } = payload;
 
-//   if (!existingUser) {
-//     throw AppError.notFound("User not found");
-//   }
+  const existingUser = await prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+  });
 
-//   // If email is being changed, make sure another user isn't using it
-//   if (email && email !== existingUser.email) {
-//     const emailExists = await prisma.user.findUnique({
-//       where: {
-//         email,
-//       },
-//     });
+  if (!existingUser) {
+    throw AppError.notFound("User not found");
+  }
 
-//     if (emailExists) {
-//       throw AppError.conflict("Email already exists");
-//     }
-//   }
+  // If email is being changed, make sure another user isn't using it
+  if (email && email !== existingUser.email) {
+    const emailExists = await prisma.user.findUnique({
+      where: {
+        email,
+      },
+    });
 
-//   const updatedUser = await prisma.user.update({
-//     where: {
-//       id: userId,
-//     },
+    if (emailExists) {
+      throw AppError.conflict("Email already exists");
+    }
+  }
 
-//     data: {
-//       ...(email !== undefined && { email }),
-//       ...(name !== undefined && { name }),
-//       ...(phone !== undefined && { phone }),
-//       ...(address !== undefined && { address }),
-//     },
+  const updatedUser = await prisma.user.update({
+    where: {
+      id: userId,
+    },
 
-//     omit: {
-//       password: true,
-//     },
-//   });
+    data: {
+      ...(email !== undefined && { email }),
+      ...(name !== undefined && { name }),
+      ...(phone !== undefined && { phone }),
+      ...(address !== undefined && { address }),
+    },
 
-//   return updatedUser;
-// };
+    omit: {
+      passwordHash: true,
+    },
+  });
 
-// const allUsers = async () => {
-//   const users = await prisma.user.findMany();
+  return updatedUser;
+};
 
-//   if (users.length === 0) throw AppError.notFound("No users are found");
+const allUsers = async () => {
+  const users = await prisma.user.findMany();
 
-//   return users;
-// };
+  if (users.length === 0) throw AppError.notFound("No users are found");
 
-// export const userService = {
-//   createUser,
-//   allUsers,
-//   getUserProfile,
-//   updateUserProfile,
-//   UserProfile,
-// };
+  return users;
+};
+
+export const userService = {
+  createUser,
+  allUsers,
+  getUserProfile,
+  updateUserProfile,
+  UserProfile,
+};
