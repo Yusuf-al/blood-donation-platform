@@ -50,13 +50,11 @@ enum RequestUrgency {
 
 enum BloodRequestStatus {
   PENDING
-  VERIFIED
+  APPROVED
   MATCHING
   DONOR_ASSIGNED
-  IN_PROGRESS
   FULFILLED
   CANCELLED
-  REJECTED
 }
 
 enum AssignmentStatus {

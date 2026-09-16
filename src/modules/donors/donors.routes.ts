@@ -10,4 +10,6 @@ donorRoutes.post(
   donorController.createADonor,
 );
 
+donorRoutes.get("/profile/:id", donorController.donorProfile);
+
 export default donorRoutes;

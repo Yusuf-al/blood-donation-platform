@@ -7,6 +7,7 @@ import adminRoute from "./modules/admin/admin.route";
 import { sendResponse } from "./utils/sendResponse";
 import { globalErrorHandler } from "./middleware/globalErrorHandler";
 import donorRoutes from "./modules/donors/donors.routes";
+import bloodReqRoutes from "./modules/blood-requests/br.routes";
 
 const app: Application = express();
 
@@ -25,6 +26,7 @@ app.use("/api/v1/user", userRoutes);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/admin", adminRoute);
 app.use("/api/v1/donor", donorRoutes);
+app.use("/api/v1/blood", bloodReqRoutes);
 
 app.use((req: Request, res: Response) => {
   sendResponse(res, {

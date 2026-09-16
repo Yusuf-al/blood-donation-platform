@@ -15,8 +15,23 @@ const createADonor = catchAsync(
 
     sendResponse(res, {
       success: true,
-      statusCode: httpStatus.OK,
+      statusCode: httpStatus.CREATED,
       message: "New Donor Profile created successfully",
+      data: result,
+    });
+  },
+);
+
+const donorProfile = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const id = req.params.id;
+
+    const result = await donorServices.donotProfile(id as string);
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Donor Profile retrived successfully",
       data: result,
     });
   },
@@ -24,4 +39,5 @@ const createADonor = catchAsync(
 
 export const donorController = {
   createADonor,
+  donorProfile,
 };
