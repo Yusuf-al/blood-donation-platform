@@ -16,10 +16,16 @@ adminRoute.patch(
   auth([UserRole.ADMIN]),
   adminController.updateUserStatusIntoDB,
 );
+
 adminRoute.patch(
   "/update/role/:id",
   auth([UserRole.ADMIN]),
   adminController.updateUserRoleIntoDB,
+);
+adminRoute.patch(
+  "/delete/user/:id",
+  auth([UserRole.ADMIN]),
+  adminController.deleteUserFromDB,
 );
 
 export default adminRoute;

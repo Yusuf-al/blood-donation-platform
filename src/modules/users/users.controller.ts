@@ -4,10 +4,15 @@ import { userService } from "./users.service";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
 import AppError from "../../errors/AppError";
-import { IUserPayload } from "./users.interface";
+import {
+  IPayload,
+  IUpdateProfile,
+  IUserPayload,
+  IVerifyEmail,
+} from "./users.interface";
 
 const createUserIntoDB = catchAsync(async (req: Request, res: Response) => {
-  const user = await userService.createUser(req.body);
+  const user = await userService.createUser(req.body as IPayload);
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.CREATED,
@@ -17,7 +22,7 @@ const createUserIntoDB = catchAsync(async (req: Request, res: Response) => {
 });
 
 const verifyEmailByOTP = catchAsync(async (req: Request, res: Response) => {
-  const user = await userService.verifyUserEmail(req.body);
+  const user = await userService.verifyUserEmail(req.body as IVerifyEmail);
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
@@ -63,7 +68,10 @@ const updateMyProfile = catchAsync(async (req: Request, res: Response) => {
 
   if (!userData) throw AppError.notFound("User not found");
 
-  const updatedData = await userService.updateUserProfile(userData, req.body);
+  const updatedData = await userService.updateUserProfile(
+    userData,
+    req.body as IUpdateProfile,
+  );
 
   sendResponse(res, {
     success: true,

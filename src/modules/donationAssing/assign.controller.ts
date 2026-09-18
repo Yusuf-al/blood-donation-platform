@@ -5,6 +5,7 @@ import AppError from "../../errors/AppError";
 import { sendResponse } from "../../utils/sendResponse";
 import httpStatus from "http-status";
 import { AssignmentStatus } from "../../../generated/prisma/client";
+import { ICreateDonationRecordInput } from "./assign.interface";
 
 const assingDonor = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -49,14 +50,13 @@ const viewDonationAssignment = catchAsync(
 
 const createNewDonationRecord = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const payload = {
+    const payload: ICreateDonationRecordInput = {
       assignmentId: req.body.assignmentId,
       notes: req.body.notes ?? null,
     };
 
-    const result = await donationAssignmentService.createNewDonationRecord(
-      payload as any,
-    );
+    const result =
+      await donationAssignmentService.createNewDonationRecord(payload);
 
     sendResponse(res, {
       success: true,

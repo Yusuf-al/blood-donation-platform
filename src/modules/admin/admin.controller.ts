@@ -58,8 +58,23 @@ const updateUserRoleIntoDB = catchAsync(
   },
 );
 
+const deleteUserFromDB = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.params.id;
+    const result = await adminServices.deleteUser(userId as string);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "User deleted successfully",
+      data: result,
+    });
+  },
+);
+
 export const adminController = {
   allUsersFromDB,
   updateUserStatusIntoDB,
   updateUserRoleIntoDB,
+  deleteUserFromDB,
 };

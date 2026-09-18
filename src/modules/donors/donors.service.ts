@@ -2,8 +2,9 @@ import { tr } from "zod/v4/locales/index.js";
 import { BloodGroup, UserRole } from "../../../generated/prisma/client";
 import AppError from "../../errors/AppError";
 import { prisma } from "../../lib/prisma";
+import { IDonorProfile } from "./donors.interface";
 
-const createDonor = async (payload: any, userId: string) => {
+const createDonor = async (payload: IDonorProfile, userId: string) => {
   const { bloodGroup, dateOfBirth, city, address, lastDonationDate } = payload;
 
   const isUserExist = await prisma.user.findUniqueOrThrow({
@@ -85,7 +86,7 @@ const createDonor = async (payload: any, userId: string) => {
   return donorResult;
 };
 
-const donotProfile = async (payload: string) => {
+const donorProfile = async (payload: string) => {
   const id = payload;
 
   const profile = await prisma.donorProfile.findFirst({
@@ -120,7 +121,31 @@ const donotProfile = async (payload: string) => {
   return donorResult;
 };
 
+const approvedDonorApplication = async (id: string) => {
+  const profile = await prisma.donorProfile.findFirst({
+    where: {
+      id: id,
+    },
+  });
+
+  if (!profile) {
+    throw AppError.notFound("Donor profile not found");
+  }
+
+  const approvedProfile = await prisma.donorProfile.update({
+    where: {
+      id: profile.id,
+    },
+    data: {
+      eligibilityVerified: true,
+    },
+  });
+
+  return approvedProfile;
+};
+
 export const donorServices = {
   createDonor,
-  donotProfile,
+  donorProfile,
+  approvedDonorApplication,
 };

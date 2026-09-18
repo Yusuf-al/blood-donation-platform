@@ -2,7 +2,12 @@ import bcrypt from "bcryptjs";
 import config from "../../config";
 import crypto from "crypto";
 import { prisma } from "../../lib/prisma";
-import { IPayload, IUserPayload } from "./users.interface";
+import {
+  IPayload,
+  IUpdateProfile,
+  IUserPayload,
+  IVerifyEmail,
+} from "./users.interface";
 import AppError from "../../errors/AppError";
 import httpStatus from "http-status";
 import { redisClient } from "../../lib/redis";
@@ -72,7 +77,7 @@ const createUser = async (payload: IPayload) => {
   return user;
 };
 
-const verifyUserEmail = async (payload: any) => {
+const verifyUserEmail = async (payload: IVerifyEmail) => {
   const otp = payload.otp;
   const email = payload.email.trim().toLowerCase();
 
@@ -156,15 +161,10 @@ const UserProfile = async (payload: string) => {
 
 const updateUserProfile = async (
   userdata: IUserPayload,
-  payload: {
-    email?: string;
-    name?: string;
-    phone?: string;
-    address?: string;
-  },
+  payload: IUpdateProfile,
 ) => {
   const { id: userId } = userdata;
-  const { email, name, phone, address } = payload;
+  const { email, name, phone, status, imageUrl } = payload;
 
   const existingUser = await prisma.user.findUnique({
     where: {
@@ -198,7 +198,8 @@ const updateUserProfile = async (
       ...(email !== undefined && { email }),
       ...(name !== undefined && { name }),
       ...(phone !== undefined && { phone }),
-      ...(address !== undefined && { address }),
+      ...(status !== undefined && { status }),
+      ...(imageUrl !== undefined && { imageUrl }),
     },
 
     omit: {

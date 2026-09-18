@@ -1,5 +1,9 @@
 import z from "zod";
 
+const userStatusEnum = z
+  .enum(["ACTIVE", "DEACTIVE", "BLOCKED", "SUSPENDED", "DELETED"])
+  .optional();
+
 const userRegistrationZodSchema = z.object({
   name: z
     .string({ message: "Name must be a string." })
@@ -27,6 +31,28 @@ const userRegistrationZodSchema = z.object({
     .optional(),
 });
 
+const userUpdateZodSchema = z.object({
+  name: z
+    .string({ message: "Name must be a string." })
+    .min(3, "Name must be at least 3 characters long.")
+    .max(50, "Name must not exceed 50 characters.")
+    .optional(),
+
+  email: z.email("Invalid email address.").optional(),
+
+  status: userStatusEnum,
+
+  imageUrl: z.string().optional(),
+
+  phone: z
+    .string()
+    .regex(/^[0-9]+$/, "Phone number should contain only numbers.")
+    .min(10, "Phone number must be at least 10 digits long.")
+    .max(15, "Phone number must not exceed 15 digits.")
+    .optional(),
+});
+
 export const UserValidation = {
   userRegistrationZodSchema,
+  userUpdateZodSchema,
 };

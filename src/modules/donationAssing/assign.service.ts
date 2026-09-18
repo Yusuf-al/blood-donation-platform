@@ -7,6 +7,10 @@ import {
 } from "../../../generated/prisma/client";
 import AppError from "../../errors/AppError";
 import { prisma } from "../../lib/prisma";
+import {
+  ICreateDonationRecordInput,
+  IUpdateAssingmentStatus,
+} from "./assign.interface";
 
 const createDonationAssignment = async (payload: any, userId: string) => {
   const { requestId, donorId } = payload;
@@ -94,44 +98,59 @@ const createDonationAssignment = async (payload: any, userId: string) => {
   return newDonationAssingment;
 };
 
-const viewAssignemt = async (payload: any) => {
+const viewAssignemt = async (payload: string) => {
   const assignmentId = payload;
 
-  const assignment = await prisma.donationAssignment.findUniqueOrThrow({
-    where: {
-      id: assignmentId,
-    },
+  const assignment = await prisma.donationAssignment.findUnique({
+    where: { id: assignmentId },
     include: {
       donorProfile: true,
-      donor: true,
+      donor: {
+        select: {
+          name: true,
+          email: true,
+          phone: true,
+        },
+      },
       request: true,
     },
   });
 
+  if (!assignment) {
+    throw AppError.notFound(
+      `Donation assignment with ID '${assignmentId}' not found`,
+    );
+  }
+
   const formattedResult = {
-    BloodRequest: {
-      BloodGroup: assignment.request.bloodGroup,
-      Hospital_name: assignment.request.hospitalName,
-      Hospital_Location: assignment.request.hospitalLocation,
-      Contact_number: assignment.request.contactPhone,
-      Urgency: assignment.request.urgency,
-      Require_units: assignment.request.requiredUnits,
-      Request_Date: assignment.request.createdAt,
+    id: assignment.id,
+    status: assignment.status,
+    assignedAt: assignment.assignedAt,
+    respondedAt: assignment.respondedAt,
+    bloodRequest: {
+      id: assignment.request.id,
+      bloodGroup: assignment.request.bloodGroup,
+      hospitalName: assignment.request.hospitalName,
+      hospitalLocation: assignment.request.hospitalLocation,
+      contactPhone: assignment.request.contactPhone,
+      urgency: assignment.request.urgency,
+      requiredUnits: assignment.request.requiredUnits,
+      requiredAt: assignment.request.requiredAt,
+      createdAt: assignment.request.createdAt,
     },
-    Donor_Profile: {
-      Nama: assignment.donor.name,
-      Blood_Group: assignment.donorProfile.bloodGroup,
-      Phone: assignment.donor.phone,
-      Email: assignment.donor.email,
-      City: assignment.donorProfile.city,
+    donorProfile: {
+      name: assignment.donor?.name || "N/A",
+      email: assignment.donor?.email || "N/A",
+      phone: assignment.donor?.phone || "N/A",
+      bloodGroup: assignment.donorProfile?.bloodGroup || null,
+      city: assignment.donorProfile?.city || null,
     },
-    donor_assign_date: assignment.assignedAt,
   };
 
   return formattedResult;
 };
 
-const createNewDonationRecord = async (payload: any) => {
+const createNewDonationRecord = async (payload: ICreateDonationRecordInput) => {
   const { assignmentId, notes } = payload;
 
   const assignment = await prisma.donationAssignment.findUniqueOrThrow({
@@ -146,35 +165,91 @@ const createNewDonationRecord = async (payload: any) => {
     );
   }
 
-  const newRecord = await prisma.donationRecord.create({
+  if (assignment.status !== AssignmentStatus.ACCEPTED) {
+    throw AppError.badRequest(
+      `Cannot create donation record. Assignment status must be ACCEPTED, but is currently '${assignment.status}'`,
+    );
+  }
+
+  // Prevent Duplicate Donation Records
+  const existingRecord = await prisma.donationRecord.findUnique({
+    where: { assignmentId },
+  });
+
+  if (existingRecord) {
+    throw AppError.conflict(
+      "A donation record already exists for this assignment",
+    );
+  }
+
+  const record = await prisma.donationRecord.create({
     data: {
       assignmentId,
       status: DonationStatus.SCHEDULED,
-      notes: notes ?? null,
+      notes: notes?.trim() || null,
     },
     include: {
       assignment: {
         include: {
           request: true,
-          donorProfile: true,
+          donorProfile: {
+            include: {
+              user: true,
+            },
+          },
         },
       },
     },
   });
 
-  return newRecord;
+  const formatDonationRecordResponse = {
+    recordId: record.id,
+    status: record.status,
+    notes: record.notes || null,
+    scheduledAt: record.createdAt,
+    updatedAt: record.updatedAt,
+
+    // Assignment Details
+    assignment: {
+      id: record.assignment.id,
+      status: record.assignment.status,
+      assignedAt: record.assignment.assignedAt,
+      respondedAt: record.assignment.respondedAt,
+    },
+
+    // Blood Request Details
+    request: {
+      id: record.assignment.request.id,
+      bloodGroup: record.assignment.request.bloodGroup,
+      unitsRequired: record.assignment.request.requiredUnits,
+      urgency: record.assignment.request.urgency,
+      hospitalName: record.assignment.request.hospitalName,
+      hospitalLocation: record.assignment.request.hospitalLocation,
+      contactPhone: record.assignment.request.contactPhone,
+      requiredAt: record.assignment.request.requiredAt,
+    },
+
+    // Donor Profile Details
+    donor: {
+      id: record.assignment.donorProfile.id,
+      name: record.assignment.donorProfile.user?.name || "N/A",
+      email: record.assignment.donorProfile.user?.email || "N/A",
+      phone: record.assignment.donorProfile.user?.phone || "N/A",
+      bloodGroup: record.assignment.donorProfile.bloodGroup,
+      city: record.assignment.donorProfile.city,
+      lastDonationDate: record.assignment.donorProfile.lastDonationDate,
+    },
+  };
+
+  return formatDonationRecordResponse;
 };
 
-const updateAssignmentStatus = async (payload: {
-  assignmentId: string;
-  status: AssignmentStatus;
-}) => {
+const updateAssignmentStatus = async (payload: IUpdateAssingmentStatus) => {
   const { assignmentId, status } = payload;
 
-  const assignment = await prisma.donationAssignment.findUniqueOrThrow({
-    where: {
-      id: assignmentId,
-    },
+  const assignment = await prisma.donationAssignment.findUnique({
+    where: { id: assignmentId },
+    include: { donorProfile: true },
   });
 
   if (!assignment) {
@@ -194,7 +269,7 @@ const updateAssignmentStatus = async (payload: {
   }
 
   const statusMap: Partial<Record<AssignmentStatus, DonationStatus>> = {
-    [AssignmentStatus.ACCEPTED]: DonationStatus.SCHEDULED, // or your specific status
+    [AssignmentStatus.ACCEPTED]: DonationStatus.SCHEDULED,
     [AssignmentStatus.COMPLETED]: DonationStatus.COMPLETED,
     [AssignmentStatus.CANCELLED]: DonationStatus.CANCELLED,
     [AssignmentStatus.REJECTED]: DonationStatus.CANCELLED,
@@ -213,17 +288,28 @@ const updateAssignmentStatus = async (payload: {
       },
     });
 
-    // Update associated donation record if status mapped & record exists
     if (recordStatus) {
+      const isCompleted = status === AssignmentStatus.COMPLETED;
+
       await tx.donationRecord.updateMany({
         where: { assignmentId: assignmentId },
         data: {
           status: recordStatus,
-          ...(status === DonationStatus.COMPLETED && {
+          ...(isCompleted && {
             donatedAt: new Date(),
           }),
         },
       });
+
+      // Update donor profile's last donation date on completion
+      if (isCompleted && assignment.donorProfileId) {
+        await tx.donorProfile.update({
+          where: { id: assignment.donorProfileId },
+          data: {
+            lastDonationDate: new Date(),
+          },
+        });
+      }
     }
 
     return updated;

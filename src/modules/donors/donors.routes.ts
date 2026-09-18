@@ -12,4 +12,10 @@ donorRoutes.post(
 
 donorRoutes.get("/profile/:id", donorController.donorProfile);
 
+donorRoutes.put(
+  "/profile/:id",
+  auth([UserRole.ADMIN]),
+  donorController.donorProfileApplication,
+);
+
 export default donorRoutes;

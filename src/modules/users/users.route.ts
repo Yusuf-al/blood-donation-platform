@@ -43,7 +43,8 @@ userRoutes.get(
 );
 
 userRoutes.put(
-  "/my-profile",
+  "/update-profile",
+  validateRequest(UserValidation.userUpdateZodSchema),
   auth([UserRole.ADMIN, UserRole.REQUESTER, UserRole.DONOR]),
   userController.updateMyProfile,
 );

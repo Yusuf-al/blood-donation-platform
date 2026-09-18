@@ -1,4 +1,11 @@
-import { Prisma, UserRole, UserStatus } from "../../../generated/prisma/client";
+import {
+  AssignmentStatus,
+  AvailabilityStatus,
+  BloodRequestStatus,
+  Prisma,
+  UserRole,
+  UserStatus,
+} from "../../../generated/prisma/client";
 import AppError from "../../errors/AppError";
 import { prisma } from "../../lib/prisma";
 import {
@@ -123,8 +130,73 @@ const updateUserRole = async (
   return updatedRole;
 };
 
+const deleteUser = async (userId: string) => {
+  const user = await prisma.user.findFirst({
+    where: {
+      id: userId,
+      isDeleted: false,
+    },
+    include: {
+      donorProfile: true,
+    },
+  });
+
+  if (!user) {
+    throw AppError.notFound("Active user not found");
+  }
+
+  const deletedUser = await prisma.$transaction(async (tx) => {
+    const updatedUser = await tx.user.update({
+      where: { id: user.id },
+      data: {
+        isDeleted: true,
+        status: "DELETED",
+      },
+    });
+
+    // Update donor profile ONLY if it exists for this user
+    if (user.donorProfile) {
+      await tx.donorProfile.update({
+        where: { userId: user.id },
+        data: {
+          availabilityStatus: AvailabilityStatus.UNAVAILABLE,
+        },
+      });
+    }
+
+    // Cancel all active donation assignments linked to this donor
+    await tx.donationAssignment.updateMany({
+      where: {
+        donorId: user.id,
+        status: { in: [AssignmentStatus.CREATED, AssignmentStatus.ACCEPTED] },
+      },
+      data: {
+        status: AssignmentStatus.CANCELLED,
+      },
+    });
+
+    // Cancel all open blood requests created by this user
+    await tx.bloodRequest.updateMany({
+      where: {
+        requesterId: user.id,
+        status: {
+          in: [BloodRequestStatus.PENDING, BloodRequestStatus.APPROVED],
+        },
+      },
+      data: {
+        status: BloodRequestStatus.CANCELLED,
+      },
+    });
+
+    return updatedUser;
+  });
+
+  return deletedUser;
+};
+
 export const adminServices = {
   allUser,
   updateUserStatus,
   updateUserRole,
+  deleteUser,
 };
