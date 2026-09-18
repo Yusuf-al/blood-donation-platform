@@ -7,6 +7,7 @@ import { UserRole } from "../../../generated/prisma/enums";
 import { auth } from "../../middleware/auth";
 import { validateRequest } from "../../middleware/validateRequest";
 import { UserValidation } from "./user.validation";
+import { upload } from "../../lib/multer";
 
 const userRoutes = Router();
 
@@ -31,6 +32,7 @@ userRoutes.get(
 userRoutes.post(
   "/register",
   validateRequest(UserValidation.userRegistrationZodSchema),
+  upload.single("profileImage"),
   userController.createUserIntoDB,
 );
 
@@ -46,6 +48,7 @@ userRoutes.put(
   "/update-profile",
   validateRequest(UserValidation.userUpdateZodSchema),
   auth([UserRole.ADMIN, UserRole.REQUESTER, UserRole.DONOR]),
+  upload.single("profileImage"),
   userController.updateMyProfile,
 );
 

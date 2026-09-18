@@ -324,12 +324,3 @@ export const donationAssignmentService = {
   createNewDonationRecord,
   updateAssignmentStatus,
 };
-
-//   await prisma.donationAssignment.update({
-//   where: {
-//     id: assignmentId,
-//   },
-//   data: {
-//     status: status,
-//   },
-// });

@@ -16,6 +16,9 @@ import {
   otpSendEmailTemplates,
   registrationConfirmationTemplate,
 } from "../../utils/emailTemplates";
+import { UploadApiResponse } from "cloudinary";
+import { cloudinary } from "../../lib/cloudinary";
+import { buffer } from "stream/consumers";
 
 const createUser = async (payload: IPayload) => {
   const { name, email, password, phone } = payload;
@@ -85,6 +88,10 @@ const verifyUserEmail = async (payload: IVerifyEmail) => {
     where: { email },
   });
 
+  if (!isUserExist) {
+    throw AppError.notFound("User not found with this email");
+  }
+
   if (isUserExist?.status === "BLOCKED") {
     throw AppError.forbidden("User is blocked");
   }
@@ -105,8 +112,8 @@ const verifyUserEmail = async (payload: IVerifyEmail) => {
     throw AppError.badRequest("Invalid OTP");
   }
 
-  if (redisOtp !== otp) {
-    throw AppError.badRequest("OTP Does Not Match");
+  if (redisOtp.trim() !== otp.trim()) {
+    throw AppError.badRequest("OTP does not match");
   }
 
   await redisClient.del(otpKey);
@@ -121,12 +128,17 @@ const verifyUserEmail = async (payload: IVerifyEmail) => {
   });
 
   const html = registrationConfirmationTemplate(isUserExist?.name!);
-  await transpoter.sendMail({
-    from: config.email_sender,
-    to: isUserExist?.email,
-    subject: "Registration Confirmation Email",
-    html,
-  });
+
+  await transpoter
+    .sendMail({
+      from: config.email_sender,
+      to: isUserExist?.email,
+      subject: "Registration Confirmation Email",
+      html,
+    })
+    .catch((err) => {
+      console.error("Failed to send registration confirmation email:", err);
+    });
 
   return verifiedUser;
 };
@@ -164,7 +176,7 @@ const updateUserProfile = async (
   payload: IUpdateProfile,
 ) => {
   const { id: userId } = userdata;
-  const { email, name, phone, status, imageUrl } = payload;
+  const { email, name, phone, status, image } = payload;
 
   const existingUser = await prisma.user.findUnique({
     where: {
@@ -189,6 +201,29 @@ const updateUserProfile = async (
     }
   }
 
+  const cloudinaryResult = await new Promise<UploadApiResponse>(
+    (resolve, reject) => {
+      cloudinary.uploader
+        .upload_stream(
+          {
+            resource_type: "auto",
+          },
+
+          async (error, result) => {
+            if (error) return reject(error);
+            if (!result) {
+              return reject(new Error("No result from cloudinary"));
+            }
+            resolve(result);
+          },
+        )
+        .end(image);
+    },
+  );
+
+  const imageUrl = cloudinaryResult.secure_url;
+  const imagePublicId = cloudinaryResult.public_id;
+
   const updatedUser = await prisma.user.update({
     where: {
       id: userId,
@@ -200,6 +235,7 @@ const updateUserProfile = async (
       ...(phone !== undefined && { phone }),
       ...(status !== undefined && { status }),
       ...(imageUrl !== undefined && { imageUrl }),
+      ...(imagePublicId !== undefined && { imagePublicId }),
     },
 
     omit: {

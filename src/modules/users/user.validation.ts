@@ -41,9 +41,6 @@ const userUpdateZodSchema = z.object({
   email: z.email("Invalid email address.").optional(),
 
   status: userStatusEnum,
-
-  imageUrl: z.string().optional(),
-
   phone: z
     .string()
     .regex(/^[0-9]+$/, "Phone number should contain only numbers.")

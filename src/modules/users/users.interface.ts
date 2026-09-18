@@ -27,5 +27,5 @@ export interface IUpdateProfile {
   name?: string;
   phone?: string;
   status?: UserStatus;
-  imageUrl?: string;
+  image?: Buffer;
 }

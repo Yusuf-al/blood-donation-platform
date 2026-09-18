@@ -65,13 +65,19 @@ const getProfile = catchAsync(async (req: Request, res: Response) => {
 
 const updateMyProfile = catchAsync(async (req: Request, res: Response) => {
   const userData = req.user;
+  const imageFile = req.file?.buffer;
+
+  const payload: IUpdateProfile = {
+    email: req.body.email,
+    name: req.body.name,
+    phone: req.body.phone,
+    status: req.body.status,
+    image: imageFile,
+  };
 
   if (!userData) throw AppError.notFound("User not found");
 
-  const updatedData = await userService.updateUserProfile(
-    userData,
-    req.body as IUpdateProfile,
-  );
+  const updatedData = await userService.updateUserProfile(userData, payload);
 
   sendResponse(res, {
     success: true,
