@@ -16,8 +16,21 @@ donationAssingRoutes.post(
 
 donationAssingRoutes.get(
   "/view-assignment/:id",
-  auth([UserRole.ADMIN, UserRole.DONOR, UserRole.DONOR]),
+  auth([UserRole.ADMIN, UserRole.DONOR, UserRole.REQUESTER]),
   assignmentController.viewDonationAssignment,
+);
+
+donationAssingRoutes.post(
+  "/new-record",
+  //   validateRequest(assignmentValidation.createAssignmentSchema),
+  // auth([UserRole.ADMIN, UserRole.DONOR]),
+  assignmentController.createNewDonationRecord,
+);
+
+donationAssingRoutes.patch(
+  "/update-assignment/:id",
+  auth([UserRole.ADMIN, UserRole.DONOR]),
+  assignmentController.updateDonationAssignStatus,
 );
 
 export default donationAssingRoutes;

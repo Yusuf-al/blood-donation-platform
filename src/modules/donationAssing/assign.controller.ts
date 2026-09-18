@@ -4,6 +4,7 @@ import { donationAssignmentService } from "./assign.service";
 import AppError from "../../errors/AppError";
 import { sendResponse } from "../../utils/sendResponse";
 import httpStatus from "http-status";
+import { AssignmentStatus } from "../../../generated/prisma/client";
 
 const assingDonor = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -40,7 +41,50 @@ const viewDonationAssignment = catchAsync(
     sendResponse(res, {
       success: true,
       statusCode: httpStatus.OK,
-      message: "Donation Data Retrived successfully",
+      message: "Assignment Retrived successfully",
+      data: result,
+    });
+  },
+);
+
+const createNewDonationRecord = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const payload = {
+      assignmentId: req.body.assignmentId,
+      notes: req.body.notes ?? null,
+    };
+
+    const result = await donationAssignmentService.createNewDonationRecord(
+      payload as any,
+    );
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.CREATED,
+      message: "Record create successfully",
+      data: result,
+    });
+  },
+);
+
+const updateDonationAssignStatus = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const payload = {
+      assignmentId: req.params.id,
+      status: req.body.status,
+    };
+
+    const result = await donationAssignmentService.updateAssignmentStatus(
+      payload as {
+        assignmentId: string;
+        status: AssignmentStatus;
+      },
+    );
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.CREATED,
+      message: "Status Updated successfully",
       data: result,
     });
   },
@@ -49,4 +93,6 @@ const viewDonationAssignment = catchAsync(
 export const assignmentController = {
   assingDonor,
   viewDonationAssignment,
+  createNewDonationRecord,
+  updateDonationAssignStatus,
 };

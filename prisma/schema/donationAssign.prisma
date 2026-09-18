@@ -2,7 +2,7 @@ model DonationAssignment {
   id             String           @id @default(uuid())
   requestId      String
   donorId        String
-  status         AssignmentStatus @default(PENDING)
+  status         AssignmentStatus @default(CREATED)
   assignedAt     DateTime         @default(now())
   respondedAt    DateTime?
 

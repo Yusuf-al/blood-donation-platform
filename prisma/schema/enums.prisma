@@ -58,7 +58,7 @@ enum BloodRequestStatus {
 }
 
 enum AssignmentStatus {
-  PENDING
+  CREATED
   ACCEPTED
   REJECTED
   COMPLETED
