@@ -1,3 +1,4 @@
+import { date } from "zod";
 import {
   BloodGroup,
   BloodRequestStatus,
@@ -88,19 +89,50 @@ const createNewBloodRequest = async (payload: any, userId: string) => {
 
 const updateBloodRequestStatus = async (payload: any, requestId: string) => {
   const { status } = payload;
+
+  const existingRequest = await prisma.bloodRequest.findUnique({
+    where: { id: requestId },
+  });
+
+  if (!existingRequest) {
+    throw AppError.notFound("Blood request not found");
+  }
+
   const normalizedStatus = status.trim().toUpperCase() as BloodRequestStatus;
-  console.log(normalizedStatus);
 
   // Ensure it's a valid enum value before updating
   if (!Object.values(BloodRequestStatus).includes(normalizedStatus)) {
     throw new Error(`Invalid status: ${status}`);
   }
+
+  const validStatuses = Object.values(BloodRequestStatus);
+  if (!validStatuses.includes(normalizedStatus)) {
+    throw AppError.badRequest(
+      `Invalid status '${status}'. Allowed values: ${validStatuses.join(", ")}`,
+    );
+  }
+
+  if (
+    normalizedStatus === BloodRequestStatus.FULFILLED &&
+    existingRequest.status !== BloodRequestStatus.APPROVED
+  ) {
+    throw AppError.badRequest(
+      `Cannot fulfill request. Status must be APPROVED first, but current status is '${existingRequest.status}'.`,
+    );
+  }
+
   const updatedRequest = await prisma.bloodRequest.update({
     where: {
       id: requestId,
     },
     data: {
       status: normalizedStatus,
+      ...(normalizedStatus === BloodRequestStatus.APPROVED && {
+        verifiedAt: new Date(),
+      }),
+      ...(normalizedStatus === BloodRequestStatus.FULFILLED && {
+        fulfilledAt: new Date(),
+      }),
     },
   });
 
@@ -111,7 +143,22 @@ const updateBloodRequestStatus = async (payload: any, requestId: string) => {
   return updatedRequest;
 };
 
+const viewBloodRequest = async (requestId: string) => {
+  const request = await prisma.bloodRequest.findUniqueOrThrow({
+    where: {
+      id: requestId,
+    },
+  });
+
+  if (!request) {
+    return `No request is found with this ${requestId} id`;
+  }
+
+  return request;
+};
+
 export const bloodReqService = {
   createNewBloodRequest,
   updateBloodRequestStatus,
+  viewBloodRequest,
 };

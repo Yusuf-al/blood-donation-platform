@@ -50,7 +50,21 @@ const updateRequestStatus = catchAsync(
   },
 );
 
+const viewBloodRequestDetails = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const requestId = req.params.id;
+    const result = await bloodReqService.viewBloodRequest(requestId as string);
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Request data retrived successfully",
+      data: result,
+    });
+  },
+);
+
 export const bloodReqController = {
   createNewBloodRequest,
   updateRequestStatus,
+  viewBloodRequestDetails,
 };

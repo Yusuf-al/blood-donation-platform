@@ -20,4 +20,9 @@ bloodReqRoutes.patch(
   bloodReqController.updateRequestStatus,
 );
 
+bloodReqRoutes.get(
+  "/view-request/:id",
+  bloodReqController.viewBloodRequestDetails,
+);
+
 export default bloodReqRoutes;
