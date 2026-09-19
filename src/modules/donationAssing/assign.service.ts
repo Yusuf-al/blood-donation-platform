@@ -244,19 +244,41 @@ const createNewDonationRecord = async (payload: ICreateDonationRecordInput) => {
   return formatDonationRecordResponse;
 };
 
-const updateAssignmentStatus = async (payload: IUpdateAssingmentStatus) => {
+const updateAssignmentStatus = async (
+  payload: IUpdateAssingmentStatus,
+  userId: string,
+) => {
   const { assignmentId, status } = payload;
 
-  const assignment = await prisma.donationAssignment.findUnique({
-    where: { id: assignmentId },
-    include: { donorProfile: true },
-  });
+  const [assignment, user] = await Promise.all([
+    prisma.donationAssignment.findUnique({
+      where: { id: assignmentId },
+      include: {
+        donorProfile: true,
+        request: true, // Needed to identify the requester
+      },
+    }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      include: { donorProfile: true },
+    }),
+  ]);
 
   if (!assignment) {
     throw AppError.notFound(
       `Donation Assignment with this ${assignmentId} is not found`,
     );
   }
+
+  if (!user) {
+    throw AppError.notFound(`User is not found`);
+  }
+
+  const isAdmin = user.role === UserRole.ADMIN;
+
+  const isAssignedDonor = assignment.donorId === user.id;
+
+  const isRequester = assignment.request.requesterId === user.id;
 
   if (
     assignment.status === AssignmentStatus.CANCELLED ||
@@ -266,6 +288,36 @@ const updateAssignmentStatus = async (payload: IUpdateAssingmentStatus) => {
     throw AppError.badRequest(
       `Cannot update assignment. Current status is already ${assignment.status}`,
     );
+  }
+
+  switch (status) {
+    case AssignmentStatus.ACCEPTED:
+    case AssignmentStatus.REJECTED:
+      if (!isAssignedDonor) {
+        throw AppError.forbidden(
+          "Only the assigned donor can accept or reject this assignment",
+        );
+      }
+      break;
+
+    case AssignmentStatus.CANCELLED:
+      if (!isAdmin && !isRequester) {
+        throw AppError.forbidden(
+          "Only an admin or the requester can cancel this assignment",
+        );
+      }
+      break;
+
+    case AssignmentStatus.COMPLETED:
+      if (!isAdmin && !isAssignedDonor && !isRequester) {
+        throw AppError.forbidden(
+          "Only an admin, the assigned donor, or the requester can mark this assignment as completed",
+        );
+      }
+      break;
+
+    default:
+      throw AppError.badRequest(`Unsupported status transition: ${status}`);
   }
 
   const statusMap: Partial<Record<AssignmentStatus, DonationStatus>> = {

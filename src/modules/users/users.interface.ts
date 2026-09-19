@@ -1,12 +1,12 @@
 import { UserRole, UserStatus } from "../../../generated/prisma/client";
 
 export interface IPayload {
-  id: string;
+  id?: string;
   name: string;
   email: string;
   password: string;
   phone?: string;
-  profileImage?: string;
+  profileImage?: Buffer;
   address?: string;
   role?: UserRole;
 }

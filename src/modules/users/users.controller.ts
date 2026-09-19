@@ -12,7 +12,16 @@ import {
 } from "./users.interface";
 
 const createUserIntoDB = catchAsync(async (req: Request, res: Response) => {
-  const user = await userService.createUser(req.body as IPayload);
+  const imageFile = req?.file?.buffer;
+  const payload: IPayload = {
+    email: req.body.email,
+    name: req.body.name,
+    phone: req.body.phone,
+    password: req.body.password,
+    profileImage: imageFile,
+  };
+
+  const user = await userService.createUser(payload);
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.CREATED,

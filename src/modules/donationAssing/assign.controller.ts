@@ -69,6 +69,7 @@ const createNewDonationRecord = catchAsync(
 
 const updateDonationAssignStatus = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.user?.id;
     const payload = {
       assignmentId: req.params.id,
       status: req.body.status,
@@ -79,6 +80,7 @@ const updateDonationAssignStatus = catchAsync(
         assignmentId: string;
         status: AssignmentStatus;
       },
+      userId as string,
     );
 
     sendResponse(res, {

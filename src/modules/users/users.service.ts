@@ -18,10 +18,9 @@ import {
 } from "../../utils/emailTemplates";
 import { UploadApiResponse } from "cloudinary";
 import { cloudinary } from "../../lib/cloudinary";
-import { buffer } from "stream/consumers";
 
 const createUser = async (payload: IPayload) => {
-  const { name, email, password, phone } = payload;
+  const { name, email, password, phone, profileImage } = payload;
 
   const isUserExist = await prisma.user.findUnique({
     where: {
@@ -49,12 +48,37 @@ const createUser = async (payload: IPayload) => {
     },
   });
 
+  const cloudinaryResult = await new Promise<UploadApiResponse>(
+    (resolve, reject) => {
+      cloudinary.uploader
+        .upload_stream(
+          {
+            resource_type: "auto",
+          },
+
+          async (error, result) => {
+            if (error) return reject(error);
+            if (!result) {
+              return reject(new Error("No result from cloudinary"));
+            }
+            resolve(result);
+          },
+        )
+        .end(profileImage);
+    },
+  );
+
+  const imageUrl = cloudinaryResult.secure_url;
+  const imagePublicId = cloudinaryResult.public_id;
+
   const createdUser = await prisma.user.create({
     data: {
       name,
       email,
       passwordHash: hashedPassword,
       phone,
+      imageUrl,
+      imagePublicId,
     },
   });
 

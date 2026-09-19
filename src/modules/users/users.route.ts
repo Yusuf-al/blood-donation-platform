@@ -31,7 +31,7 @@ userRoutes.get(
 
 userRoutes.post(
   "/register",
-  validateRequest(UserValidation.userRegistrationZodSchema),
+  // validateRequest(UserValidation.userRegistrationZodSchema),
   upload.single("profileImage"),
   userController.createUserIntoDB,
 );

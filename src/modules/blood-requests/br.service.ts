@@ -4,6 +4,7 @@ import {
   BloodRequestStatus,
   RequestStatus,
   RequestUrgency,
+  UserRole,
 } from "../../../generated/prisma/client";
 import AppError from "../../errors/AppError";
 import { prisma } from "../../lib/prisma";
@@ -87,7 +88,11 @@ const createNewBloodRequest = async (payload: any, userId: string) => {
   return newRequest;
 };
 
-const updateBloodRequestStatus = async (payload: any, requestId: string) => {
+const updateBloodRequestStatus = async (
+  payload: any,
+  requestId: string,
+  userId: string,
+) => {
   const { status } = payload;
 
   const existingRequest = await prisma.bloodRequest.findUnique({
@@ -96,6 +101,14 @@ const updateBloodRequestStatus = async (payload: any, requestId: string) => {
 
   if (!existingRequest) {
     throw AppError.notFound("Blood request not found");
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user) {
+    throw AppError.notFound("User not found");
   }
 
   const normalizedStatus = status.trim().toUpperCase() as BloodRequestStatus;
@@ -110,6 +123,33 @@ const updateBloodRequestStatus = async (payload: any, requestId: string) => {
     throw AppError.badRequest(
       `Invalid status '${status}'. Allowed values: ${validStatuses.join(", ")}`,
     );
+  }
+
+  const isAdmin = user.role === UserRole.ADMIN;
+  const isRequester = existingRequest.requesterId === userId;
+
+  if (!isAdmin && !isRequester) {
+    throw AppError.forbidden(
+      "You are not authorized to update this blood request",
+    );
+  }
+
+  // Requester-specific restrictions
+  if (isRequester && !isAdmin) {
+    // Requesters CANNOT approve requests
+    if (normalizedStatus === BloodRequestStatus.APPROVED) {
+      throw AppError.forbidden("Only admins can approve blood requests");
+    }
+
+    // Requesters CANNOT modify requests that are already APPROVED or FULFILLED
+    if (
+      existingRequest.status === BloodRequestStatus.APPROVED ||
+      existingRequest.status === BloodRequestStatus.FULFILLED
+    ) {
+      throw AppError.badRequest(
+        `Cannot update request because it is already ${existingRequest.status}`,
+      );
+    }
   }
 
   if (
@@ -135,10 +175,6 @@ const updateBloodRequestStatus = async (payload: any, requestId: string) => {
       }),
     },
   });
-
-  if (!updatedRequest) {
-    throw AppError.notFound("Request Not found");
-  }
 
   return updatedRequest;
 };

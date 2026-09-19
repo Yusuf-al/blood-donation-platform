@@ -32,14 +32,19 @@ const createNewBloodRequest = catchAsync(
 const updateRequestStatus = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const requestId = req.params.id;
+    const id = req.user?.id;
 
     if (!requestId) {
       throw AppError.unauthorized("Request not found");
+    }
+    if (!id) {
+      throw AppError.unauthorized("User not found");
     }
 
     const result = await bloodReqService.updateBloodRequestStatus(
       req.body as any,
       requestId as string,
+      id as string,
     );
     sendResponse(res, {
       success: true,
