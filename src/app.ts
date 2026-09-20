@@ -9,8 +9,15 @@ import { globalErrorHandler } from "./middleware/globalErrorHandler";
 import donorRoutes from "./modules/donors/donors.routes";
 import bloodReqRoutes from "./modules/blood-requests/br.routes";
 import donationAssingRoutes from "./modules/donationAssing/assign.routes";
+import paymentRoute from "./modules/payment/payment.route";
+import { getBkashIdToken } from "./lib/bkash";
 
 const app: Application = express();
+
+app.use(
+  "/api/v1/subscription/webhook",
+  express.raw({ type: "application/json" }),
+);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -18,6 +25,10 @@ app.use(cookieParser());
 app.use(cors());
 
 app.get("/", async (req: Request, res: Response) => {
+  const grantIdTokenResult = await getBkashIdToken();
+
+  console.log(grantIdTokenResult);
+
   res.json({
     message: "Application is running",
   });
@@ -29,6 +40,7 @@ app.use("/api/v1/admin", adminRoute);
 app.use("/api/v1/donor", donorRoutes);
 app.use("/api/v1/blood", bloodReqRoutes);
 app.use("/api/v1/donation", donationAssingRoutes);
+app.use("/api/v1/subscription", paymentRoute);
 
 app.use((req: Request, res: Response) => {
   sendResponse(res, {

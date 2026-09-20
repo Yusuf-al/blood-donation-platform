@@ -9,6 +9,7 @@ model User {
   phone               String?         @unique
   role                UserRole        @default(REQUESTER)
   status              UserStatus      @default(ACTIVE)
+  isPremiumUser       Boolean         @default(false)
 
   imageUrl            String          @default("")
   imagePublicId       String          @default("")

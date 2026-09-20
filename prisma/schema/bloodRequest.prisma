@@ -16,7 +16,7 @@ model BloodRequest {
 
   requester           User @relation("RequesterRequests", fields: [requesterId], references: [id])
   assignments         DonationAssignment[]
-  payment             Payment?
+  
   statusHistory       BloodRequestStatusHistory[]
 
   createdAt           DateTime @default(now())
