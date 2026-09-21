@@ -29,8 +29,14 @@ const createADonor = catchAsync(
 const donorProfile = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id;
-
-    const result = await donorServices.donorProfile(id as string);
+    const userId = req.user?.id;
+    if (!userId) {
+      throw AppError.badRequest("User not found");
+    }
+    const result = await donorServices.donorProfile(
+      id as string,
+      userId as string,
+    );
 
     sendResponse(res, {
       success: true,

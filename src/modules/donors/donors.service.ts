@@ -71,8 +71,10 @@ const createDonor = async (payload: IDonorProfile, userId: string) => {
   return donorResult;
 };
 
-const donorProfile = async (payload: string) => {
+const donorProfile = async (payload: string, userId: string) => {
   const id = payload;
+
+  const { user, isPremiumUser } = await checkUser(userId);
 
   const profile = await prisma.donorProfile.findFirst({
     where: {
@@ -91,6 +93,10 @@ const donorProfile = async (payload: string) => {
   const brithDate = new Date(profile.dateOfBirth);
 
   const age = today.getFullYear() - brithDate.getFullYear();
+  const canViewContact =
+    isPremiumUser ||
+    user.role === UserRole.ADMIN ||
+    (user.role === UserRole.DONOR && profile.userId === user.id);
 
   const donorResult = {
     name: profile.user.name,
@@ -98,8 +104,13 @@ const donorProfile = async (payload: string) => {
     bloodGrp: profile.bloodGroup,
     city: profile.city,
     address: profile.address,
-    email: profile.user.email,
-    phone: profile.user.phone,
+    email: canViewContact
+      ? profile.user.email
+      : "Only available for Premium users",
+
+    phone: canViewContact
+      ? profile.user.phone
+      : "Only available for Premium users",
     availabilityStatus: profile.availabilityStatus,
   };
 

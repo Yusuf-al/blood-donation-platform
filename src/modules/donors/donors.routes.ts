@@ -10,7 +10,11 @@ donorRoutes.post(
   donorController.createADonor,
 );
 
-donorRoutes.get("/profile/:id", donorController.donorProfile);
+donorRoutes.get(
+  "/profile/:id",
+  auth([UserRole.REQUESTER, UserRole.ADMIN, UserRole.DONOR]),
+  donorController.donorProfile,
+);
 
 donorRoutes.put(
   "/profile/:id",
