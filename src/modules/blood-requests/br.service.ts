@@ -8,6 +8,8 @@ import {
 } from "../../../generated/prisma/client";
 import AppError from "../../errors/AppError";
 import { prisma } from "../../lib/prisma";
+import { checkUser } from "../../utils/checkUserExist";
+import { checkMonthlyRequstLimit } from "../../utils/request-limit";
 
 const createNewBloodRequest = async (payload: any, userId: string) => {
   const {
@@ -21,23 +23,30 @@ const createNewBloodRequest = async (payload: any, userId: string) => {
     description,
   } = payload;
 
-  const isUserExist = await prisma.user.findUniqueOrThrow({
-    where: {
-      id: userId,
-    },
-  });
+  // const isUserExist = await prisma.user.findUniqueOrThrow({
+  //   where: {
+  //     id: userId,
+  //   },
+  // });
 
-  if (isUserExist?.status === "BLOCKED") {
-    throw AppError.forbidden("User is blocked");
-  }
+  // if (isUserExist?.status === "BLOCKED") {
+  //   throw AppError.forbidden("User is blocked");
+  // }
 
-  if (!isUserExist?.isVerified) {
-    throw AppError.conflict("Email is not Verified yet");
-  }
+  // if (!isUserExist?.isVerified) {
+  //   throw AppError.conflict("Email is not Verified yet");
+  // }
 
-  if (isUserExist?.isDeleted || isUserExist?.status === "DELETED") {
-    throw AppError.forbidden("User is Deleted");
-  }
+  // if (isUserExist?.isDeleted || isUserExist?.status === "DELETED") {
+  //   throw AppError.forbidden("User is Deleted");
+  // }
+
+  const { user: isUserExist, isPremiumUser } = await checkUser(userId);
+
+  const { limit } = await checkMonthlyRequstLimit(
+    isUserExist.id,
+    isPremiumUser,
+  );
 
   const bloodGroupMap: Record<string, BloodGroup> = {
     "A+": BloodGroup.A_POSITIVE,
@@ -66,19 +75,67 @@ const createNewBloodRequest = async (payload: any, userId: string) => {
     throw AppError.badRequest(`Invalid urgency level provided: ${urgency}`);
   }
 
-  // 4. Create Record
-  const newRequest = await prisma.bloodRequest.create({
-    data: {
-      requesterId: isUserExist.id,
-      bloodGroup: bGroup,
-      requiredUnits: Number(requiredUnits),
-      hospitalName,
-      hospitalLocation,
-      contactPhone,
-      urgency: normalizedUrgency,
-      requiredAt: new Date(requiredAt),
-      description: description || null,
-    },
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+
+  const newRequest = await prisma.$transaction(async (tx) => {
+    // Find or create this month's usage record
+    const usage = await tx.monthlyRequestUsage.upsert({
+      where: {
+        userId_year_month: {
+          userId: isUserExist.id,
+          year,
+          month,
+        },
+      },
+      create: {
+        userId: isUserExist.id,
+        year,
+        month,
+        requestCount: 0,
+      },
+      update: {},
+    });
+
+    // Check monthly limit
+    if (usage.requestCount >= limit) {
+      throw AppError.forbidden(
+        `Monthly request limit reached. You can make only ${limit} requests this month.`,
+      );
+    }
+
+    // Create blood request
+    const bloodRequest = await tx.bloodRequest.create({
+      data: {
+        requesterId: isUserExist.id,
+        bloodGroup: bGroup,
+        requiredUnits: Number(requiredUnits),
+        hospitalName,
+        hospitalLocation,
+        contactPhone,
+        urgency: normalizedUrgency,
+        requiredAt: new Date(requiredAt),
+        description: description || null,
+        ...(isPremiumUser && {
+          isFeatured: true,
+        }),
+      },
+    });
+
+    // Increase usage count
+    await tx.monthlyRequestUsage.update({
+      where: {
+        id: usage.id,
+      },
+      data: {
+        requestCount: {
+          increment: 1,
+        },
+      },
+    });
+
+    return bloodRequest;
   });
 
   if (!newRequest) {

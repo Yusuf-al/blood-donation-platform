@@ -179,7 +179,6 @@ const getUserProfile = async (payload: IUserPayload) => {
   });
 
   if (!userProfile) throw AppError.notFound("User not found");
-
   return userProfile;
 };
 

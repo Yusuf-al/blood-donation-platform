@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import config from "../../config";
 import { prisma } from "../../lib/prisma";
 import jwt, { JwtPayload, SignOptions } from "jsonwebtoken";
+import crypto from "crypto";
 import { jwtUtils } from "../../utils/jwt";
 import { IJwtpayload, Ilogin } from "./auth.interface";
 import AppError from "../../errors/AppError";
@@ -9,6 +10,9 @@ import { TokenPayload } from "google-auth-library";
 import { googleClient } from "../../lib/googleAuth";
 import httpStatus from "http-status";
 import { AuthProvider, UserStatus } from "../../../generated/prisma/client";
+import { redisClient } from "../../lib/redis";
+import { transpoter } from "../../lib/nodemailer";
+import { forgetEmailSendEmailTemplates } from "../../utils/emailTemplates";
 
 const loginUserService = async (payload: Ilogin) => {
   const { email, password } = payload;
@@ -224,8 +228,46 @@ const googleLoginService = async (payload: any) => {
   };
 };
 
+const forgetPasswordSerivce = async (email: string) => {
+  const user = await prisma.user.findFirst({
+    where: {
+      email,
+    },
+  });
+
+  if (!user) {
+    throw AppError.notFound(`User not found with this ${email}`);
+  }
+
+  const ExpireIn = 5 * 60;
+
+  const otpKey = `user-email-check-otp:${email}`;
+  const otpValue = crypto.randomInt(100000, 1000000).toString();
+
+  await redisClient.set(otpKey, otpValue, {
+    expiration: {
+      type: "EX",
+      value: ExpireIn,
+    },
+  });
+
+  const html = forgetEmailSendEmailTemplates(otpValue, user.name);
+
+  await transpoter.sendMail({
+    from: config.email_sender,
+    to: user.email,
+    subject: "Email Varification",
+    html,
+  });
+
+  return {
+    message: "OTP has been to your for reset your password",
+  };
+};
+
 export const authService = {
   loginUserService,
   tokenRefresh,
   googleLoginService,
+  forgetPasswordSerivce,
 };

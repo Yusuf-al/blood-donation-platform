@@ -3,6 +3,7 @@ import httpStatus from "http-status";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
 import { authService } from "./auth.service";
+import AppError from "../../errors/AppError";
 
 const loginUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -84,8 +85,23 @@ const googleLogin = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const forgetPassword = catchAsync(async (req: Request, res: Response) => {
+  const email = req.body.email;
+  if (!email) {
+    throw AppError.badRequest("user is not provided");
+  }
+  const result = await authService.forgetPasswordSerivce(email);
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "New Access token created",
+    data: result,
+  });
+});
+
 export const authController = {
   loginUser,
   refreshToken,
   googleLogin,
+  forgetPassword,
 };

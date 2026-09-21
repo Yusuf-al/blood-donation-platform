@@ -12,7 +12,7 @@ export const checkUser = async (userId: string) => {
     throw AppError.forbidden("User is blocked");
   }
 
-  if (user?.isVerified) {
+  if (!user?.isVerified) {
     throw AppError.conflict("Email is not Verified yet");
   }
 

@@ -1,0 +1,16 @@
+model MonthlyRequestUsage {
+  id           String   @id @default(uuid())
+  userId       String
+  year         Int
+  month        Int
+  requestCount Int     @default(0)
+
+  user User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, year, month])
+  @@index([userId, year, month])
+  @@map("monthly_request_usage")
+}
