@@ -9,7 +9,6 @@ import {
   IVerifyEmail,
 } from "./users.interface";
 import AppError from "../../errors/AppError";
-import httpStatus from "http-status";
 import { redisClient } from "../../lib/redis";
 import { transpoter } from "../../lib/nodemailer";
 import {

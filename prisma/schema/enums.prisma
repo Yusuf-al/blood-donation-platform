@@ -47,6 +47,7 @@ enum RequestUrgency {
   NORMAL
   URGENT
   CRITICAL
+  VERY_URGENT
 }
 
 enum BloodRequestStatus {

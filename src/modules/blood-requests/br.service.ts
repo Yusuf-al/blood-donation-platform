@@ -75,6 +75,10 @@ const createNewBloodRequest = async (payload: any, userId: string) => {
     throw AppError.badRequest(`Invalid urgency level provided: ${urgency}`);
   }
 
+  if (!isPremiumUser && normalizedUrgency === RequestUrgency.VERY_URGENT) {
+    throw AppError.badRequest("Only a premium user make very urgent request");
+  }
+
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
