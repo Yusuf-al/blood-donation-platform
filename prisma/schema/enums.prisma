@@ -75,6 +75,13 @@ enum DonationStatus {
   CANCELLED
 }
 
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  PENDING
+}
+
 enum PaymentProvider {
   BKASH
   SSLCOMMERZ

@@ -55,14 +55,16 @@ const bkashPaymentController = catchAsync(
 );
 
 const bkashPaymentCallBack = catchAsync(async (req: Request, res: Response) => {
-  const result = await paymentServices.bkashPaymentCallback();
-
-  sendResponse(res, {
-    statusCode: 200,
-    success: true,
-    message: "Bkash Payment created",
-    data: result,
-  });
+  const { bkashPaymentExecuteResponse, redirectUrl } =
+    await paymentServices.bkashPaymentCallback(req.query);
+  res.redirect(redirectUrl);
+  console.log(bkashPaymentExecuteResponse);
+  // sendResponse(res, {
+  //   statusCode: 200,
+  //   success: true,
+  //   message: "Bkash Payment created",
+  //   data: result,
+  // });
 });
 
 export const paymentController = {

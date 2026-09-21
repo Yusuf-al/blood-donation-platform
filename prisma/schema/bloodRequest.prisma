@@ -13,6 +13,7 @@ model BloodRequest {
   verifiedAt          DateTime?
   fulfilledAt         DateTime?
   deletedAt           DateTime?
+  isFeatured          Boolean           @default(false)
 
   requester           User @relation("RequesterRequests", fields: [requesterId], references: [id])
   assignments         DonationAssignment[]

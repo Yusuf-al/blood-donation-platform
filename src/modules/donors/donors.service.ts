@@ -3,27 +3,12 @@ import { BloodGroup, UserRole } from "../../../generated/prisma/client";
 import AppError from "../../errors/AppError";
 import { prisma } from "../../lib/prisma";
 import { IDonorProfile } from "./donors.interface";
+import { checkUser } from "../../utils/checkUserExist";
 
 const createDonor = async (payload: IDonorProfile, userId: string) => {
   const { bloodGroup, dateOfBirth, city, address, lastDonationDate } = payload;
 
-  const isUserExist = await prisma.user.findUniqueOrThrow({
-    where: {
-      id: userId,
-    },
-  });
-
-  if (isUserExist?.status === "BLOCKED") {
-    throw AppError.forbidden("User is blocked");
-  }
-
-  if (!isUserExist?.isVerified) {
-    throw AppError.conflict("Email is not Verified yet");
-  }
-
-  if (isUserExist?.isDeleted || isUserExist?.status === "DELETED") {
-    throw AppError.forbidden("User is Deleted");
-  }
+  const { user } = await checkUser(userId);
 
   // 1. Fixed TypeScript Map: Maps string inputs directly to your BloodGroup Enum types cleanly
   const bloodGroupMap: Record<string, BloodGroup> = {
@@ -49,7 +34,7 @@ const createDonor = async (payload: IDonorProfile, userId: string) => {
     // 1. Update the user's role
     await tx.user.update({
       where: {
-        id: userId,
+        id: user.id,
       },
       data: {
         role: UserRole.DONOR,

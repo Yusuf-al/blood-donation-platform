@@ -25,6 +25,8 @@ model User {
   requests            BloodRequest[]  @relation("RequesterRequests")
   assignments         DonationAssignment[] @relation("DonorAssignments")
   payments            Payment[]
+  requestUsage        MonthlyRequestUsage[]
+  subscription        Subscription[]
  
 
   @@index([role, status])
