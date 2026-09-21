@@ -4,6 +4,12 @@ import AppError from "../../errors/AppError";
 import { prisma } from "../../lib/prisma";
 import { IDonorProfile } from "./donors.interface";
 import { checkUser } from "../../utils/checkUserExist";
+import { transpoter } from "../../lib/nodemailer";
+import config from "../../config";
+import {
+  donorRequestApprovedTemplate,
+  donorRequestSubmittedTemplate,
+} from "../../utils/emailTemplates";
 
 const createDonor = async (payload: IDonorProfile, userId: string) => {
   const { bloodGroup, dateOfBirth, city, address, lastDonationDate } = payload;
@@ -15,7 +21,9 @@ const createDonor = async (payload: IDonorProfile, userId: string) => {
   const age = today.getFullYear() - brithDate.getFullYear();
 
   if (age < 18) {
-    throw AppError.badRequest("Your not eligible for become a donor");
+    throw AppError.badRequest(
+      "Your not eligible for become a donor. Age must be 18 or above",
+    );
   }
 
   // 1. Fixed TypeScript Map: Maps string inputs directly to your BloodGroup Enum types cleanly
@@ -76,6 +84,15 @@ const createDonor = async (payload: IDonorProfile, userId: string) => {
     availabilityStatus: newDonor.availabilityStatus,
   };
 
+  const html = donorRequestSubmittedTemplate(user.name, user.email);
+
+  await transpoter.sendMail({
+    from: config.email_sender,
+    to: user.email,
+    subject: "Donor Profile create Request",
+    html,
+  });
+
   return donorResult;
 };
 
@@ -130,6 +147,9 @@ const approvedDonorApplication = async (id: string) => {
     where: {
       id: id,
     },
+    include: {
+      user: true,
+    },
   });
 
   if (!profile) {
@@ -143,6 +163,14 @@ const approvedDonorApplication = async (id: string) => {
     data: {
       eligibilityVerified: true,
     },
+  });
+  const html = donorRequestApprovedTemplate(profile.user.name);
+
+  await transpoter.sendMail({
+    from: config.email_sender,
+    to: profile.user.email,
+    subject: "Donor Request Approved",
+    html,
   });
 
   return approvedProfile;

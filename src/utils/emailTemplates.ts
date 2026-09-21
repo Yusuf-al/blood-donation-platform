@@ -74,3 +74,26 @@ export const otpSendEmailTemplates = (
       <div style="padding:18px; text-align:center; background:#fafbfc; font-size:11px; color:#9aa4b2;"> &copy; 2026 FASTBlood. All rights reserved. </div> 
       </div>`;
 };
+
+export const donorRequestSubmittedTemplate = (name: string, email: string) => {
+  return ` <div style="max-width:480px; margin:40px auto; background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 6px 20px rgba(0,0,0,.06); font-family:Arial,sans-serif;"> 
+              <div style="padding:24px; text-align:center; border-bottom:1px solid #eee;"> 
+                <h2 style="margin:0; color:#d62839;"> FAST<span style="color:#263238;">Blood</span> </h2> 
+                <p style="margin:6px 0 0; font-size:12px; color:#888;"> Donor Request Confirmation </p> 
+              </div> 
+              <div style="padding:30px;"> 
+                <h3 style="margin:0 0 12px; color:#172b4d;"> Donor Request Submitted </h3> 
+                <p style="font-size:14px; line-height:1.7; color:#5f6c7b;"> Hello <strong>${name}</strong>, </p> 
+                <p style="font-size:14px; line-height:1.7; color:#5f6c7b;"> Your request to become a FASTBlood donor has been successfully submitted. </p> 
+                <div style="margin:20px 0; padding:16px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; font-size:13px; color:#166534;"> 
+                ✓ Donor request submitted successfully. </div> <p style="margin:0 0 8px; font-size:13px; color:#8a94a3;"> Registered email:
+                 <strong style="color:#5f6c7b;">${email}</strong> </p> 
+                 <p style="margin:16px 0 0; font-size:13px; line-height:1.6; color:#8a94a3;">
+                  Our team will review your request. You will be notified once your donor profile has been approved. </p> 
+                  <p style="margin:16px 0 0; font-size:13px; line-height:1.6; color:#8a94a3;"> Thank you for choosing to help save lives through blood donation. </p> 
+                  </div> <div style="padding:18px; text-align:center; background:#fafbfc; font-size:11px; color:#9aa4b2;"> &copy; ${new Date().getFullYear()} FASTBlood. All rights reserved. </div> </div> `;
+};
+
+export const donorRequestApprovedTemplate = (name: string) => {
+  return ` <div style="max-width:480px; margin:40px auto; background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 6px 20px rgba(0,0,0,.06); font-family:Arial,sans-serif;"> <div style="padding:24px; text-align:center; border-bottom:1px solid #eee;"> <h2 style="margin:0; color:#d62839;"> FAST<span style="color:#263238;">Blood</span> </h2> <p style="margin:6px 0 0; font-size:12px; color:#888;"> Donor Approval Confirmation </p> </div> <div style="padding:30px;"> <h3 style="margin:0 0 12px; color:#172b4d;"> Donor Request Approved 🎉 </h3> <p style="font-size:14px; line-height:1.7; color:#5f6c7b;"> Hello <strong>${name}</strong>, </p> <p style="font-size:14px; line-height:1.7; color:#5f6c7b;"> Great news! Your request to become a FASTBlood donor has been <strong>approved</strong>. </p> <div style="margin:20px 0; padding:16px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; font-size:13px; color:#166534;"> ✓ You are now an approved FASTBlood donor. </div> <p style="margin:0 0 8px; font-size:13px; color:#8a94a3;"> <p style="margin:16px 0 0; font-size:13px; line-height:1.6; color:#8a94a3;"> Your donor profile is now active. You may be contacted when your blood group and location match a blood request. </p> <p style="margin:16px 0 0; font-size:13px; line-height:1.6; color:#8a94a3;"> Thank you for becoming a donor and helping save lives. </p> </div> <div style="padding:18px; text-align:center; background:#fafbfc; font-size:11px; color:#9aa4b2;"> &copy; ${new Date().getFullYear()} FASTBlood. All rights reserved. </div> </div> `;
+};

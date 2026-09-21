@@ -9,3 +9,8 @@ export interface IUpdateAssingmentStatus {
   assignmentId: string;
   status: AssignmentStatus;
 }
+
+export interface IAssignemt {
+  requestId: string;
+  donorId: string;
+}

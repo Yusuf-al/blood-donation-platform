@@ -17,7 +17,7 @@ donorRoutes.get(
 );
 
 donorRoutes.put(
-  "/profile/:id",
+  "/profile-approve/:id",
   auth([UserRole.ADMIN]),
   donorController.donorProfileApplication,
 );

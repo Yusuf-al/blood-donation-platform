@@ -8,11 +8,15 @@ import {
 import AppError from "../../errors/AppError";
 import { prisma } from "../../lib/prisma";
 import {
+  IAssignemt,
   ICreateDonationRecordInput,
   IUpdateAssingmentStatus,
 } from "./assign.interface";
 
-const createDonationAssignment = async (payload: any, userId: string) => {
+const createDonationAssignment = async (
+  payload: IAssignemt,
+  userId: string,
+) => {
   const { requestId, donorId } = payload;
 
   const user = await prisma.user.findUniqueOrThrow({
