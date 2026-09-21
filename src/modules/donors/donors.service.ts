@@ -10,6 +10,14 @@ const createDonor = async (payload: IDonorProfile, userId: string) => {
 
   const { user } = await checkUser(userId);
 
+  const today = new Date();
+  const brithDate = new Date(dateOfBirth);
+  const age = today.getFullYear() - brithDate.getFullYear();
+
+  if (age < 18) {
+    throw AppError.badRequest("Your not eligible for become a donor");
+  }
+
   // 1. Fixed TypeScript Map: Maps string inputs directly to your BloodGroup Enum types cleanly
   const bloodGroupMap: Record<string, BloodGroup> = {
     "A+": BloodGroup.A_POSITIVE,
