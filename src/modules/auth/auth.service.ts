@@ -13,6 +13,7 @@ import { AuthProvider, UserStatus } from "../../../generated/prisma/client";
 import { redisClient } from "../../lib/redis";
 import { transpoter } from "../../lib/nodemailer";
 import { forgetEmailSendEmailTemplates } from "../../utils/emailTemplates";
+import { checkUser } from "../../utils/checkUserExist";
 
 const loginUserService = async (payload: Ilogin) => {
   const { email, password } = payload;
@@ -229,19 +230,21 @@ const googleLoginService = async (payload: any) => {
 };
 
 const forgetPasswordSerivce = async (email: string) => {
-  const user = await prisma.user.findFirst({
+  const isUserExist = await prisma.user.findFirst({
     where: {
       email,
     },
   });
 
-  if (!user) {
+  if (!isUserExist) {
     throw AppError.notFound(`User not found with this ${email}`);
   }
 
+  const { user } = await checkUser(isUserExist.id);
+
   const ExpireIn = 5 * 60;
 
-  const otpKey = `user-email-check-otp:${email}`;
+  const otpKey = `password-reset-otp:${email}`;
   const otpValue = crypto.randomInt(100000, 1000000).toString();
 
   await redisClient.set(otpKey, otpValue, {
@@ -256,7 +259,7 @@ const forgetPasswordSerivce = async (email: string) => {
   await transpoter.sendMail({
     from: config.email_sender,
     to: user.email,
-    subject: "Email Varification",
+    subject: "Reset Password",
     html,
   });
 
@@ -265,9 +268,60 @@ const forgetPasswordSerivce = async (email: string) => {
   };
 };
 
+const resetPasswordService = async (
+  email: string,
+  otp: string,
+  password: string,
+) => {
+  const isUserExist = await prisma.user.findFirst({
+    where: {
+      email,
+    },
+  });
+
+  if (!isUserExist) {
+    throw AppError.notFound(`User not found with this ${email}`);
+  }
+
+  const { user } = await checkUser(isUserExist.id);
+
+  const hashedPassword = await bcrypt.hash(
+    password,
+    Number(config.bcrypt_salt_round),
+  );
+
+  const otpKey = `password-reset-otp:${email}`;
+
+  const redisOtp = await redisClient.get(otpKey);
+
+  if (!redisOtp) {
+    throw AppError.badRequest("Invalid OTP");
+  }
+
+  if (redisOtp.trim() !== otp.trim()) {
+    throw AppError.badRequest("OTP does not match");
+  }
+
+  await prisma.user.update({
+    where: {
+      email: user.email,
+    },
+    data: {
+      passwordHash: hashedPassword,
+    },
+  });
+
+  await redisClient.del(otpKey);
+
+  return {
+    message: "Password has been changed successully",
+  };
+};
+
 export const authService = {
   loginUserService,
   tokenRefresh,
   googleLoginService,
   forgetPasswordSerivce,
+  resetPasswordService,
 };

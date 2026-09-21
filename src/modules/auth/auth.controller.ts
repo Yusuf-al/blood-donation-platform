@@ -94,7 +94,29 @@ const forgetPassword = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
-    message: "New Access token created",
+    message: "Forget password email sent",
+    data: result,
+  });
+});
+
+const resetPassword = catchAsync(async (req: Request, res: Response) => {
+  const email = req.body.email;
+  const otp = req.body.otp;
+  const password = req.body.password;
+
+  if (!email || !otp || !password) {
+    throw AppError.badRequest("Credentials are not provided");
+  }
+
+  const result = await authService.resetPasswordService(
+    email as string,
+    otp as string,
+    password as string,
+  );
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Forget password email sent",
     data: result,
   });
 });
@@ -104,4 +126,5 @@ export const authController = {
   refreshToken,
   googleLogin,
   forgetPassword,
+  resetPassword,
 };
