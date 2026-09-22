@@ -23,12 +23,6 @@ declare global {
   }
 }
 
-userRoutes.get(
-  "/all-users",
-  auth([UserRole.ADMIN]),
-  userController.getAllUserFromDB,
-);
-
 userRoutes.post(
   "/register",
   // validateRequest(UserValidation.userRegistrationZodSchema),

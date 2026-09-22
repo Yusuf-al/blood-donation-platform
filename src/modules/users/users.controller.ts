@@ -95,22 +95,11 @@ const updateMyProfile = catchAsync(async (req: Request, res: Response) => {
     data: updatedData,
   });
 });
-const getAllUserFromDB = catchAsync(async (req: Request, res: Response) => {
-  const userData = await userService.allUsers();
-
-  sendResponse(res, {
-    success: true,
-    statusCode: httpStatus.OK,
-    message: "All Users Informations ",
-    data: userData,
-  });
-});
 
 export const userController = {
   createUserIntoDB,
   getMyProfile,
   getProfile,
   updateMyProfile,
-  getAllUserFromDB,
   verifyEmailByOTP,
 };

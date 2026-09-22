@@ -4,7 +4,7 @@ import { adminServices } from "./admin.service";
 import { sendResponse } from "../../utils/sendResponse";
 import httpStatus from "http-status";
 import { UserRole, UserStatus } from "../../../generated/prisma/client";
-import { IUserQuery } from "./admin.interface";
+import { IDonorQuery, IUserQuery } from "./admin.interface";
 
 const allUsersFromDB = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -15,6 +15,21 @@ const allUsersFromDB = catchAsync(
       success: true,
       message: "All Users",
       data: usersResult,
+    });
+  },
+);
+
+const donorProfilesFromDB = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const donorsResult = await adminServices.allDonors(
+      req.query as IDonorQuery,
+    );
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "All Donors",
+      data: donorsResult,
     });
   },
 );
@@ -74,6 +89,7 @@ const deleteUserFromDB = catchAsync(
 
 export const adminController = {
   allUsersFromDB,
+  donorProfilesFromDB,
   updateUserStatusIntoDB,
   updateUserRoleIntoDB,
   deleteUserFromDB,

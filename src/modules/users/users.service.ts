@@ -268,17 +268,8 @@ const updateUserProfile = async (
   return updatedUser;
 };
 
-const allUsers = async () => {
-  const users = await prisma.user.findMany();
-
-  if (users.length === 0) throw AppError.notFound("No users are found");
-
-  return users;
-};
-
 export const userService = {
   createUser,
-  allUsers,
   getUserProfile,
   updateUserProfile,
   UserProfile,

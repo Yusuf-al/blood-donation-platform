@@ -90,11 +90,10 @@ const allUser = async (query: IUserQuery) => {
 const donorProfileSearchableFields: (keyof Prisma.DonorProfileWhereInput)[] = [
   "city",
   "address",
-  "bloodGroup",
 ];
 
 const allDonors = async (query: IDonorQuery) => {
-  const { searchTerm, city, bloodGroup, availabilityStatus } = query;
+  const { searchTerm, bloodGroup, availabilityStatus } = query;
 
   const { page, limit, skip, sortBy, sortOrder } = calculatePagination(query);
 
@@ -115,10 +114,6 @@ const allDonors = async (query: IDonorQuery) => {
         },
       })),
     });
-  }
-
-  if (city) {
-    andConditions.push({ city });
   }
 
   if (bloodGroup) {

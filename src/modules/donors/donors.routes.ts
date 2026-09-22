@@ -16,10 +16,4 @@ donorRoutes.get(
   donorController.donorProfile,
 );
 
-donorRoutes.put(
-  "/profile-approve/:id",
-  auth([UserRole.ADMIN]),
-  donorController.donorProfileApplication,
-);
-
 export default donorRoutes;
