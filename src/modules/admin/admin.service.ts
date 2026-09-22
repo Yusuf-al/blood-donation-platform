@@ -161,23 +161,78 @@ const allDonors = async (query: IDonorQuery) => {
 };
 
 const updateUserStatus = async (status: UserStatus, userId: string) => {
-  const { user } = await checkUser(userId);
-  const updatedStatus = await prisma.user.update({
+  const userProfile = await prisma.user.findUnique({
     where: {
-      id: user.id,
+      id: userId,
     },
-    data: {
-      status: status,
-    },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
+    include: {
+      donorProfile: true,
     },
   });
 
-  return updatedStatus;
+  if (!userProfile) {
+    throw AppError.notFound("User not found");
+  }
+
+  if (
+    userProfile.status === status &&
+    (status !== UserStatus.DELETED || userProfile.isDeleted === true)
+  ) {
+    throw AppError.conflict(`User is already ${status.toLowerCase()}`);
+  }
+
+  const updatedUser = await prisma.$transaction(async (tx) => {
+    const user = await tx.user.update({
+      where: {
+        id: userProfile.id,
+      },
+      data: {
+        status,
+        isDeleted: status === UserStatus.DELETED,
+      },
+    });
+
+    if (status !== UserStatus.ACTIVE) {
+      if (userProfile.donorProfile) {
+        await tx.donorProfile.update({
+          where: {
+            userId: userProfile.id,
+          },
+          data: {
+            availabilityStatus: AvailabilityStatus.UNAVAILABLE,
+          },
+        });
+
+        await tx.donationAssignment.updateMany({
+          where: {
+            donorId: userProfile.id,
+            status: {
+              in: [AssignmentStatus.CREATED, AssignmentStatus.ACCEPTED],
+            },
+          },
+          data: {
+            status: AssignmentStatus.CANCELLED,
+          },
+        });
+      }
+
+      await tx.bloodRequest.updateMany({
+        where: {
+          requesterId: userProfile.id,
+          status: {
+            in: [BloodRequestStatus.PENDING, BloodRequestStatus.APPROVED],
+          },
+        },
+        data: {
+          status: BloodRequestStatus.CANCELLED,
+        },
+      });
+    }
+
+    return user;
+  });
+
+  return updatedUser;
 };
 
 const updateUserRole = async (
