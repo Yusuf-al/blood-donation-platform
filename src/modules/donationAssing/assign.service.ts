@@ -1,3 +1,4 @@
+import { create } from "domain";
 import {
   AssignmentStatus,
   AvailabilityStatus,
@@ -43,42 +44,38 @@ const createDonationAssignment = async (
     throw AppError.badRequest("This request can't be assinged donor");
   }
 
-  const isDonorExist = await prisma.user.findUniqueOrThrow({
+  const isDonorExist = await prisma.donorProfile.findUniqueOrThrow({
     where: {
       id: donorId,
-      role: "DONOR",
     },
     include: {
-      donorProfile: true,
+      user: true,
     },
   });
 
-  if (isDonorExist?.status === "BLOCKED") {
+  if (isDonorExist.user.status === "BLOCKED") {
     throw AppError.forbidden("User is blocked");
   }
 
-  if (!isDonorExist?.isVerified) {
+  if (!isDonorExist.user.isVerified) {
     throw AppError.conflict("Email is not Verified yet");
   }
 
-  if (isDonorExist?.isDeleted || isDonorExist?.status === "DELETED") {
+  if (isDonorExist?.user.isDeleted || isDonorExist?.user.status === "DELETED") {
     throw AppError.forbidden("User is Deleted");
   }
 
-  if (!isDonorExist?.donorProfile) {
+  if (!isDonorExist) {
     throw AppError.badRequest("Donor does not have a completed donor profile");
   }
 
-  if (
-    isDonorExist.donorProfile.availabilityStatus !==
-    AvailabilityStatus.AVAILABLE
-  ) {
+  if (isDonorExist.availabilityStatus !== AvailabilityStatus.AVAILABLE) {
     throw AppError.badRequest(
       "Donor is currently marked as unavailable for donation",
     );
   }
 
-  if (isRequestExist.bloodGroup !== isDonorExist.donorProfile.bloodGroup) {
+  if (isRequestExist.bloodGroup !== isDonorExist.bloodGroup) {
     throw AppError.badRequest("Blood groups do not match");
   }
 
@@ -89,17 +86,49 @@ const createDonationAssignment = async (
 
   const respondedAt = isAdmin ? null : new Date();
 
-  const newDonationAssingment = await prisma.donationAssignment.create({
-    data: {
-      requestId,
-      donorId: isDonorExist.id,
-      donorProfileId: isDonorExist.donorProfile?.id as string,
-      status: initialStatus,
-      respondedAt,
-    },
+  const newDonationAssignment = await prisma.$transaction(async (tx) => {
+    const bloodRequest = await tx.bloodRequest.findUnique({
+      where: {
+        id: requestId,
+      },
+    });
+
+    if (!bloodRequest) {
+      throw AppError.notFound("Blood request not found");
+    }
+
+    if (
+      bloodRequest.status !== BloodRequestStatus.PENDING &&
+      bloodRequest.status !== BloodRequestStatus.APPROVED
+    ) {
+      throw AppError.conflict(
+        "This blood request cannot be assigned to a donor",
+      );
+    }
+
+    const newAssignment = await tx.donationAssignment.create({
+      data: {
+        requestId,
+        donorId: isDonorExist.user.id,
+        donorProfileId: isDonorExist.id,
+        status: initialStatus,
+        respondedAt,
+      },
+    });
+
+    await tx.bloodRequest.update({
+      where: {
+        id: requestId,
+      },
+      data: {
+        status: BloodRequestStatus.DONOR_ASSIGNED,
+      },
+    });
+
+    return newAssignment;
   });
 
-  return newDonationAssingment;
+  return newDonationAssignment;
 };
 
 const viewAssignemt = async (payload: string) => {

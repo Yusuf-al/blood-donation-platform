@@ -9,7 +9,7 @@ const donationAssingRoutes = Router();
 
 donationAssingRoutes.post(
   "/new-assignment",
-  //   validateRequest(assignmentValidation.createAssignmentSchema),
+  validateRequest(assignmentValidation.createAssignmentSchema),
   auth([UserRole.ADMIN, UserRole.DONOR]),
   assignmentController.assingDonor,
 );
@@ -22,8 +22,8 @@ donationAssingRoutes.get(
 
 donationAssingRoutes.post(
   "/new-record",
-  //   validateRequest(assignmentValidation.createAssignmentSchema),
-  // auth([UserRole.ADMIN, UserRole.DONOR]),
+  validateRequest(assignmentValidation.createRecordSchema),
+  auth([UserRole.ADMIN, UserRole.DONOR]),
   assignmentController.createNewDonationRecord,
 );
 

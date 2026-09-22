@@ -18,6 +18,13 @@ export const createAssignmentSchema = z.object({
   status: AssignmentStatusEnum.default("PENDING").optional(),
 });
 
+export const createRecordSchema = z.object({
+  assignmentId: z.string().uuid("Invalid Request ID format"),
+
+  notes: z.string().optional(),
+});
+
 export const assignmentValidation = {
   createAssignmentSchema,
+  createRecordSchema,
 };
