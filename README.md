@@ -1,413 +1,732 @@
-# Contact Management API
+# Blood Donation Management System — API
 
-Backend implementation for extending the Monica CRM contact module.
+Backend REST API for a blood donation management platform supporting **Admins**, **Requesters**, and **Donors**.
 
-## Tech Stack
+The system provides APIs for user authentication, user management, donor applications, blood requests, donation assignments, donation records, and payment processing.
 
-* Node.js
-* Express.js
-* TypeScript
-* PostgreSQL
-* Prisma ORM
-* JWT Authentication
-* HTTP-only Cookies
-* CORS
+---
 
-# Features Implemented
-
-## Contact Management
-
-* Create contacts
-* Retrieve contacts
-* Search contacts
-* Filter favorite contacts
-* Mark/unmark contacts as favorite
-* Add and update personal notes
-* Contact statistics
-* Pagination support
-* Sorting support
-
-## Authentication & User Management
-
-* User registration
-* User login
-* JWT-based authentication
-* Refresh token support
-* Cookie-based authentication
-* User profile management
-* Role-based authorization
-
-# Setup Instructions
-
-## Prerequisites
-
-Make sure the following are installed:
-
-* Node.js (v18+)
-* PostgreSQL
-* npm
-
-## Clone Repository
-
-```bash
-git clone https://github.com/Yusuf-al/backend-project-assignment
-
-cd project-name
-```
-
-## Install Dependencies
-
-```bash
-npm install
-```
-
-## Environment Configuration
-
-Create a `.env` file in the project root:
-
-```env
-PORT=[PORT]
-
-DATABASE_URL=[DATABASE_URL]
-
-JWT_ACCESS_SECRET=[ACCESS_TOKEN_SECRET]
-JWT_REFRESH_SECRET=[REFRESH_TOKEN_SECRET]
-
-JWT_ACCESS_EXPIRES_IN=[ACCESS_TOKEN_EXPIRE_TIME]
-JWT_REFRESH_EXPIRES_IN=[REFRESH_TOKEN_EXPIRE_TIME]
-
-BCRYPT_SALT_ROUNDS=[SALT_ROUNDS]
-```
-
-## Database Setup
-
-Run Prisma migration:
-
-```bash
-npx prisma migrate dev
-```
-
-Generate Prisma Client:
-
-```bash
-npx prisma generate
-```
-
-(Optional) Open Prisma Studio:
-
-```bash
-npx prisma studio
-```
-
-## Run Application
-
-### Development
-
-```bash
-npm run dev
-```
-
-### Production
-
-```bash
-npm run build
-
-npm start
-```
-
-Application will run on:
-
-```http
-http://localhost:[PORT]
-```
-
-# Project Structure
-
-The project follows a modular Express architecture:
+## Live URL
 
 ```text
-src
-│
-├── modules
-│   ├── contacts
-│   │   ├── contacts.controller.ts
-│   │   ├── contacts.service.ts
-│   │   ├── contacts.route.ts
-│   │   └── contacts.interface.ts
-│   │
-│   ├── users
-│   │   ├── users.controller.ts
-│   │   ├── users.service.ts
-│   │   ├── users.route.ts
-│   │   └── users.interface.ts
-│   │
-│   └── auth
-│       ├── auth.controller.ts
-│       ├── auth.service.ts
-│       └── auth.route.ts
-│
-├── middleware
-│   ├── auth.ts
-│   └── index.d.ts
-│
-├── utils
-│   ├── catchAsync.ts
-│   ├── checkContact.ts
-│   ├── jwt.ts
-│   └── sendResponse.ts
-│
-├── lib
-│   └── prisma.ts
-│
-├── app.ts
-└── server.ts
+https://fastbloodplatform.vercel.app/api/v1
 ```
+
+## Doc URL
+
+```text
+https://docs.google.com/document/d/1L7aTgUzDzTqeHwLZ-UUA2p9Eif113xpgT_xSRZiA8jg/edit?usp=sharing
+```
+
+All API endpoints described below are relative to this base URL.
+
+---
+
+## Roles
+
+The system supports the following user roles:
+
+- `ADMIN`
+- `REQUESTER`
+- `DONOR`
+
+## Credentials
+ADMIN - abc3@example.com
+
+PASSWORD - "Abc@123"
 
 # Authentication
 
-Authentication is implemented using:
+Protected endpoints require authentication through the application's authentication middleware.
 
-* JWT Access Token
-* JWT Refresh Token
-* HTTP-only Cookies
-* Role-based authorization
+Authentication and authorization are handled using the application's `auth()` middleware and the user's assigned role.
 
-## Authentication Flow
+---
 
-1. User logs in with email and password.
-2. Server validates credentials.
-3. Server generates access and refresh tokens.
-4. Tokens are stored in HTTP-only cookies.
-5. Protected routes validate the token using authentication middleware.
+# API Reference
 
-## Protected Contact Routes
+## 1. Authentication — `/api/v1/auth`
 
-The following routes require authentication:
+| Method | Endpoint | Description | Access |
+|---|---|---|---|
+| POST | `/api/v1/auth/login` | Authenticate/login a user | Public |
+| POST | `/api/v1/auth/google` | Authenticate/login using Google | Public |
+| POST | `/api/v1/auth/forget-password` | Start the forgot-password process | Public |
+| POST | `/api/v1/auth/reset-password` | Reset a user's password | Public |
+| POST | `/api/v1/auth/refresh-token` | Refresh an authentication token | Public |
 
-### Create Contact
-
-```http
-POST /api/contacts/new
-```
-
-Roles:
-
-```
-ADMIN
-USER
-```
-
-### Get User Contacts
+### Login
 
 ```http
-GET /api/contacts/all
+POST /api/v1/auth/login
 ```
 
-Roles:
+Authenticates an existing user.
 
-```
-ADMIN
-USER
-```
+**Access:** Public
 
-### Contact Statistics
+---
+
+### Google Login
 
 ```http
-GET /api/contacts/stats
+POST /api/v1/auth/google
 ```
 
-Roles:
+Authenticates a user through Google authentication.
 
-```
-ADMIN
-USER
-```
+**Access:** Public
 
-Example authenticated request:
+---
+
+### Forgot Password
 
 ```http
-GET /api/contacts/all
-
-Cookie:
-accessToken=<your_jwt_token>
+POST /api/v1/auth/forget-password
 ```
 
-# User & Authentication API
+Starts the forgot-password process.
 
-## Register User
+**Access:** Public
+
+---
+
+### Reset Password
+
+```http
+POST /api/v1/auth/reset-password
+```
+
+Resets the user's password.
+
+**Access:** Public
+
+---
+
+### Refresh Token
+
+```http
+POST /api/v1/auth/refresh-token
+```
+
+Generates a refreshed authentication token.
+
+**Access:** Public
+
+---
+
+# 2. User — `/api/v1/user`
+
+| Method | Endpoint | Description | Access |
+|---|---|---|---|
+| POST | `/api/v1/user/register` | Register a new user | Public |
+| POST | `/api/v1/user/verify-email` | Verify user email using OTP | Public |
+| GET | `/api/v1/user/me` | Get current authenticated user's profile | Admin, Requester, Donor |
+| PUT | `/api/v1/user/update-profile` | Update current user's profile | Admin, Requester, Donor |
+
+## User Registration
+
+```http
+POST /api/v1/user/register
+```
 
 Creates a new user account.
 
-```http
-POST /api/auth/register
+**Access:** Public
+
+The endpoint supports profile image upload through:
+
+```text
+profileImage
 ```
 
-Request:
+The route uses:
 
-```json
-{
-  "name": "John Doe",
-  "email": "john@example.com",
-  "password": "password123"
-}
+```ts
+upload.single("profileImage")
 ```
 
-## Login User
+---
 
-Authenticates a user and generates JWT tokens.
-
-```http
-POST /api/auth/login
-```
-
-Request:
-
-```json
-{
-  "email": "john@example.com",
-  "password": "password123"
-}
-```
-
-## Refresh Token
-
-Generate a new access token using refresh token.
+## Verify Email
 
 ```http
-POST /api/auth/refresh-token
+POST /api/v1/user/verify-email
 ```
+
+Verifies a user's email address using OTP.
+
+**Access:** Public
+
+---
 
 ## Get My Profile
 
-Returns authenticated user's profile.
-
 ```http
-GET /api/users/me
+GET /api/v1/user/me
 ```
+
+Returns the currently authenticated user's profile.
+
+**Access:**
+
+- Admin
+- Requester
+- Donor
+
+---
 
 ## Update Profile
 
-Updates authenticated user's information.
+```http
+PUT /api/v1/user/update-profile
+```
+
+Updates the authenticated user's profile.
+
+The route supports:
+
+- Profile information validation
+- Profile image upload
+
+**Access:**
+
+- Admin
+- Requester
+- Donor
+
+---
+
+# 3. Admin — `/api/v1/admin`
+
+| Method | Endpoint | Description | Access |
+|---|---|---|---|
+| GET | `/api/v1/admin/users` | Get all registered users | Admin |
+| GET | `/api/v1/admin/donors` | Get donor profiles | Admin |
+| PATCH | `/api/v1/admin/update/status/:id` | Update a user's status | Admin |
+| PATCH | `/api/v1/admin/update/role/:id` | Update a user's role | Admin |
+| PATCH | `/api/v1/admin/delete/user/:id` | Delete/deactivate a user | Admin |
+| PUT | `/api/v1/admin/profile-approve/:id` | Approve/process donor profile application | Admin |
+
+### Get All Users
 
 ```http
-PUT /api/users/my-profile
+GET /api/v1/admin/users
 ```
 
-# Contact API
+Returns all registered users.
 
-## Create Contact
+**Access:** Admin
+
+---
+
+### Get Donor Profiles
 
 ```http
-POST /api/contacts/new
+GET /api/v1/admin/donors
 ```
 
-## Get Contacts
+Returns donor profiles.
+
+**Access:** Admin
+
+---
+
+### Update User Status
 
 ```http
-GET /api/contacts
+PATCH /api/v1/admin/update/status/:id
 ```
 
-## Search Contacts
+Updates a user's account status.
+
+`id` represents the user ID.
+
+**Access:** Admin
+
+---
+
+### Update User Role
 
 ```http
-GET /api/contacts?search=john
+PATCH /api/v1/admin/update/role/:id
 ```
 
-## Favorite Contacts
+Updates a user's role.
+
+`id` represents the user ID.
+
+**Access:** Admin
+
+---
+
+### Delete User
 
 ```http
-GET /api/contacts/favorites
+PATCH /api/v1/admin/delete/user/:id
 ```
 
-## Contact Statistics
+Deletes/deactivates a user through the admin controller.
+
+`id` represents the user ID.
+
+**Access:** Admin
+
+---
+
+### Approve Donor Profile
 
 ```http
-GET /api/contacts/stats
+PUT /api/v1/admin/profile-approve/:id
 ```
 
-Example response:
+Processes/approves a donor profile application.
 
-```json
-{
-  "total_contacts": 125,
-  "favorite_contacts": 18,
-  "contacts_with_notes": 42
-}
-```
+`id` represents the donor/profile ID.
 
-## Mark Contact as Favorite
+**Access:** Admin
+
+---
+
+# 4. Donor — `/api/v1/donor`
+
+| Method | Endpoint | Description | Access |
+|---|---|---|---|
+| POST | `/api/v1/donor/become-donor` | Submit a donor application | Requester |
+| GET | `/api/v1/donor/profile/:id` | Get donor profile | Requester, Admin, Donor |
+
+## Become a Donor
 
 ```http
-POST /api/contacts/:id/favorite
+POST /api/v1/donor/become-donor
 ```
 
-## Toggle Favorite Status
+Allows a requester to submit a donor application.
+
+**Access:** Requester
+
+---
+
+## Donor Profile
 
 ```http
-PATCH /api/contacts/:id/favorite
+GET /api/v1/donor/profile/:id
 ```
 
-## Update Contact Note
+Returns donor profile information.
+
+`id` represents the donor/profile ID.
+
+**Access:**
+
+- Requester
+- Admin
+- Donor
+
+---
+
+# 5. Blood Requests — `/api/v1/blood`
+
+| Method | Endpoint | Description | Access |
+|---|---|---|---|
+| POST | `/api/v1/blood/new-request` | Create a new blood request | Admin, Requester, Donor |
+| PATCH | `/api/v1/blood/update-request/:id` | Update blood request status | Admin, Requester |
+| GET | `/api/v1/blood/view-request/:id` | View blood request details | No auth middleware specified |
+
+## Create Blood Request
 
 ```http
-PUT /api/contacts/:id/note
+POST /api/v1/blood/new-request
 ```
 
-# Search, Filtering, Pagination & Sorting
+Creates a new blood request.
 
-The contact listing endpoint supports dynamic filtering.
+**Access:**
 
-## Search
+- Admin
+- Requester
+- Donor
+
+The supplied route uses:
+
+```ts
+validateRequest(bloodRequestSchema)
+```
+
+for request validation.
+
+---
+
+## Update Blood Request
 
 ```http
-GET /api/contacts?search=john
+PATCH /api/v1/blood/update-request/:id
 ```
 
-Search is performed on:
+Updates the status of a blood request.
 
-* First name
-* Last name
-* Email
-* Phone
+`id` represents the blood request ID.
 
-## Favorite Filter
+**Access:**
+
+- Admin
+- Requester
+
+---
+
+## View Blood Request
 
 ```http
-GET /api/contacts?favorite=1
+GET /api/v1/blood/view-request/:id
 ```
 
-## Combined Filtering
+Returns details of a blood request.
+
+`id` represents the blood request ID.
+
+**Authentication:** No `auth()` middleware is specified in the supplied route definition.
+
+---
+
+# 6. Donation Assignment & Donation Records — `/api/v1/donation`
+
+| Method | Endpoint | Description | Access |
+|---|---|---|---|
+| POST | `/api/v1/donation/new-assignment` | Create a donor assignment | Admin, Donor |
+| GET | `/api/v1/donation/view-assignment/:id` | View donation assignment | Admin, Donor, Requester |
+| POST | `/api/v1/donation/new-record` | Create a donation record | No auth middleware specified |
+| PATCH | `/api/v1/donation/update-assignment/:id` | Update donation assignment status | Admin, Donor |
+
+## Create Donation Assignment
 
 ```http
-GET /api/contacts?favorite=1&search=john
+POST /api/v1/donation/new-assignment
 ```
 
-## Pagination
+Assigns a donor to a donation/request.
 
-Pagination is implemented using:
+**Access:**
 
-* `skip`
-* `take`
+- Admin
+- Donor
 
-Example:
+The assignment validation middleware is currently commented out in the supplied route definition.
+
+---
+
+## View Donation Assignment
 
 ```http
-GET /api/contacts?page=1&limit=10
+GET /api/v1/donation/view-assignment/:id
 ```
 
-## Sorting
+Returns information about a donation assignment.
 
-Sorting is handled using Prisma `orderBy`.
+`id` represents the assignment ID.
 
-Example:
+**Access:**
+
+- Admin
+- Donor
+- Requester
+
+---
+
+## Create Donation Record
 
 ```http
-GET /api/contacts?page=1&limit=10&sortBy=createdAt&sortOrder=desc
+POST /api/v1/donation/new-record
 ```
 
-The same Prisma filtering logic is reused for:
+Creates a new donation record.
 
-* Fetching contacts
-* Counting total records
+**Authentication:** No active `auth()` middleware is specified in the supplied route definition.
 
+The following authentication code is currently commented out:
 
+```ts
+// auth([UserRole.ADMIN, UserRole.DONOR])
+```
+
+---
+
+## Update Donation Assignment
+
+```http
+PATCH /api/v1/donation/update-assignment/:id
+```
+
+Updates the status of a donation assignment.
+
+`id` represents the assignment ID.
+
+**Access:**
+
+- Admin
+- Donor
+
+---
+
+# 7. Payments / Subscription — `/api/v1/subscription`
+
+| Method | Endpoint | Description | Access |
+|---|---|---|---|
+| POST | `/api/v1/subscription/create-checkout-session` | Create a checkout/payment session | Donor, Requester |
+| POST | `/api/v1/subscription/webhook` | Handle payment gateway webhook events | Public / Webhook |
+| POST | `/api/v1/subscription/bkash-payment` | Initiate a bKash payment | Requester, Donor |
+| GET | `/api/v1/subscription/bkash/callback` | Handle bKash callback | No auth middleware specified |
+
+## Create Checkout Session
+
+```http
+POST /api/v1/subscription/create-checkout-session
+```
+
+Creates a checkout/payment session.
+
+**Access:**
+
+- Donor
+- Requester
+
+---
+
+## Payment Webhook
+
+```http
+POST /api/v1/subscription/webhook
+```
+
+Handles incoming payment gateway webhook events.
+
+**Access:** Public / Payment Gateway
+
+This endpoint does not use normal user authentication middleware.
+
+The webhook is intended to be called by the payment gateway rather than a client application.
+
+---
+
+## bKash Payment
+
+```http
+POST /api/v1/subscription/bkash-payment
+```
+
+Initiates a bKash payment.
+
+**Access:**
+
+- Requester
+- Donor
+
+---
+
+## bKash Callback
+
+```http
+GET /api/v1/subscription/bkash/callback
+```
+
+Handles the bKash payment callback.
+
+**Authentication:** No `auth()` middleware is specified in the supplied route definition.
+
+---
+
+# Route Modules
+
+The Express application mounts the API modules as follows:
+
+```ts
+app.use("/api/v1/user", userRoutes);
+
+app.use("/api/v1/auth", authRoutes);
+
+app.use("/api/v1/admin", adminRoute);
+
+app.use("/api/v1/donor", donorRoutes);
+
+app.use("/api/v1/blood", bloodReqRoutes);
+
+app.use("/api/v1/donation", donationAssingRoutes);
+
+app.use("/api/v1/subscription", paymentRoute);
+```
+
+---
+
+# API Mounting Summary
+
+| Module | Mounted Prefix |
+|---|---|
+| User | `/api/v1/user` |
+| Authentication | `/api/v1/auth` |
+| Admin | `/api/v1/admin` |
+| Donor | `/api/v1/donor` |
+| Blood Request | `/api/v1/blood` |
+| Donation | `/api/v1/donation` |
+| Subscription / Payment | `/api/v1/subscription` |
+
+---
+
+# Roles & Access Summary
+
+| Role | Main Capabilities |
+|---|---|
+| **Requester** | Register/login, manage own profile, create blood requests, apply to become a donor, view donor profiles, view donation assignments, make payments |
+| **Donor** | Manage own profile, create blood requests, participate in donation assignments, update donation assignment status, view donor profiles, make payments |
+| **Admin** | Manage users and donor profiles, approve donor applications, update user roles/status, manage blood requests, manage donation assignments, and access permitted payment operations |
+
+---
+
+# Access Control Overview
+
+## Public
+
+The following operations are publicly accessible:
+
+- User login
+- Google login
+- Forgot password
+- Reset password
+- Refresh token
+- User registration
+- Email verification
+- Payment webhook
+
+Some additional endpoints have no active authentication middleware as noted in their respective sections.
+
+## Admin
+
+Admins can:
+
+- View all users
+- View donor profiles
+- Update user status
+- Update user roles
+- Delete/deactivate users
+- Approve donor applications
+- Update blood request status
+- Create donation assignments
+- View donation assignments
+- Update donation assignment status
+
+## Requester
+
+Requesters can:
+
+- Create blood requests
+- Update blood request status where permitted
+- Apply to become a donor
+- View donor profiles
+- View donation assignments
+- Create checkout sessions
+- Make bKash payments
+- Manage their own profile
+
+## Donor
+
+Donors can:
+
+- Create blood requests
+- Create donation assignments
+- View donation assignments
+- Update donation assignment status
+- View donor profiles
+- Create checkout sessions
+- Make bKash payments
+- Manage their own profile
+
+---
+
+# Route Security Notes
+
+The following security details are based directly on the supplied route definitions:
+
+1. `GET /api/v1/blood/view-request/:id` does not currently use `auth()` middleware.
+
+2. `POST /api/v1/donation/new-record` does not currently use `auth()` middleware.
+
+3. Authentication for `POST /api/v1/donation/new-record` is commented out.
+
+4. Assignment validation is commented out in the supplied donation assignment routes.
+
+5. `GET /api/v1/subscription/bkash/callback` does not use `auth()` middleware.
+
+6. `POST /api/v1/subscription/webhook` does not use `auth()` middleware because it is intended for payment gateway webhook requests.
+
+7. User registration and profile update support profile image uploads through the `profileImage` field.
+
+---
+
+# API Endpoint Overview
+
+```text
+http://localhost:4000/api/v1
+│
+├── /auth
+│   ├── POST /login
+│   ├── POST /google
+│   ├── POST /forget-password
+│   ├── POST /reset-password
+│   └── POST /refresh-token
+│
+├── /user
+│   ├── POST /register
+│   ├── POST /verify-email
+│   ├── GET  /me
+│   └── PUT  /update-profile
+│
+├── /admin
+│   ├── GET   /users
+│   ├── GET   /donors
+│   ├── PATCH /update/status/:id
+│   ├── PATCH /update/role/:id
+│   ├── PATCH /delete/user/:id
+│   └── PUT   /profile-approve/:id
+│
+├── /donor
+│   ├── POST /become-donor
+│   └── GET  /profile/:id
+│
+├── /blood
+│   ├── POST  /new-request
+│   ├── PATCH /update-request/:id
+│   └── GET   /view-request/:id
+│
+├── /donation
+│   ├── POST  /new-assignment
+│   ├── GET   /view-assignment/:id
+│   ├── POST  /new-record
+│   └── PATCH /update-assignment/:id
+│
+└── /subscription
+    ├── POST /create-checkout-session
+    ├── POST /webhook
+    ├── POST /bkash-payment
+    └── GET  /bkash/callback
+```
+
+---
+
+# Notes
+
+- The API base URL is:
+
+```text
+http://localhost:4000/api/v1
+```
+
+- API access is controlled using role-based authentication.
+- The supported roles are `ADMIN`, `REQUESTER`, and `DONOR`.
+- `bloodRequestSchema` is used to validate new blood requests.
+- Profile image uploads use the multipart field `profileImage`.
+- The exact request body and response body structures were not included in the supplied route definitions, so they are not specified in this README.
+- Payment gateway configuration details were not included in the supplied route definitions.
+- Environment variables should be used for sensitive values such as database credentials, JWT secrets, payment credentials, and OAuth credentials.
+- Passwords, tokens, OTPs, and other sensitive authentication information should never be committed to source control.
+
+---
+
+# End of Documentation
