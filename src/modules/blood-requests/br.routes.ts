@@ -22,6 +22,7 @@ bloodReqRoutes.patch(
 
 bloodReqRoutes.get(
   "/view-request/:id",
+  auth([UserRole.ADMIN, UserRole.REQUESTER]),
   bloodReqController.viewBloodRequestDetails,
 );
 

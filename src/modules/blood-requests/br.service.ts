@@ -240,15 +240,28 @@ const updateBloodRequestStatus = async (
   return updatedRequest;
 };
 
-const viewBloodRequest = async (requestId: string) => {
-  const request = await prisma.bloodRequest.findUniqueOrThrow({
+const viewBloodRequest = async (requestId: string, userId: string) => {
+  const { user } = await checkUser(userId);
+
+  const request = await prisma.bloodRequest.findUnique({
     where: {
       id: requestId,
     },
   });
 
   if (!request) {
-    return `No request is found with this ${requestId} id`;
+    throw AppError.notFound(`No blood request found with this ${requestId} id`);
+  }
+
+  const isOwner =
+    user.role === UserRole.REQUESTER && request.requesterId === user.id;
+
+  const isAdmin = user.role === UserRole.ADMIN;
+
+  if (!isOwner && !isAdmin) {
+    throw AppError.unauthorized(
+      "Only the admin and the request submitter can view this request",
+    );
   }
 
   return request;

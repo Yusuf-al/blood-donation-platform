@@ -58,7 +58,11 @@ const updateRequestStatus = catchAsync(
 const viewBloodRequestDetails = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const requestId = req.params.id;
-    const result = await bloodReqService.viewBloodRequest(requestId as string);
+    const userId = req.user?.id;
+    const result = await bloodReqService.viewBloodRequest(
+      requestId as string,
+      userId as string,
+    );
     sendResponse(res, {
       success: true,
       statusCode: httpStatus.OK,
