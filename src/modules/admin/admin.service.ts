@@ -8,11 +8,12 @@ import {
 } from "../../../generated/prisma/client";
 import AppError from "../../errors/AppError";
 import { prisma } from "../../lib/prisma";
+import { checkUser } from "../../utils/checkUserExist";
 import {
   buildPaginationMeta,
   calculatePagination,
 } from "../../utils/paginationHelper";
-import { IUserQuery } from "./admin.interface";
+import { IDonorQuery, IUserQuery } from "./admin.interface";
 
 const userSearchableFields: (keyof Prisma.UserWhereInput)[] = [
   "name",
@@ -20,12 +21,22 @@ const userSearchableFields: (keyof Prisma.UserWhereInput)[] = [
   "phone",
 ];
 
+// const donorProfileSearchableFields: (keyof Prisma.DonorProfileWhereInput)[] = [
+//   "city",
+//   "address",
+//   "bloodGroup",
+// ];
+
 const allUser = async (query: IUserQuery) => {
   const { searchTerm, role, status } = query;
 
   const { page, limit, skip, sortBy, sortOrder } = calculatePagination(query);
 
   const andConditions: Prisma.UserWhereInput[] = [];
+
+  andConditions.push({
+    isDeleted: false,
+  });
 
   if (searchTerm) {
     andConditions.push({
@@ -58,9 +69,8 @@ const allUser = async (query: IUserQuery) => {
         email: true,
         phone: true,
         role: true,
-        address: true,
-        isActive: true,
-        profileImage: true,
+        imageUrl: true,
+        isPremiumUser: true,
       },
       skip,
       take: limit,
@@ -77,20 +87,98 @@ const allUser = async (query: IUserQuery) => {
   };
 };
 
+const donorProfileSearchableFields: (keyof Prisma.DonorProfileWhereInput)[] = [
+  "city",
+  "address",
+  "bloodGroup",
+];
+
+const allDonors = async (query: IDonorQuery) => {
+  const { searchTerm, city, bloodGroup, availabilityStatus } = query;
+
+  const { page, limit, skip, sortBy, sortOrder } = calculatePagination(query);
+
+  const andConditions: Prisma.DonorProfileWhereInput[] = [];
+
+  andConditions.push({
+    user: {
+      isDeleted: false,
+    },
+  });
+
+  if (searchTerm) {
+    andConditions.push({
+      OR: donorProfileSearchableFields.map((field) => ({
+        [field]: {
+          contains: searchTerm,
+          mode: "insensitive",
+        },
+      })),
+    });
+  }
+
+  if (city) {
+    andConditions.push({ city });
+  }
+
+  if (bloodGroup) {
+    andConditions.push({ bloodGroup });
+  }
+  if (availabilityStatus) {
+    andConditions.push({ availabilityStatus });
+  }
+
+  const whereConditions: Prisma.DonorProfileWhereInput =
+    andConditions.length > 0 ? { AND: andConditions } : {};
+
+  const [donorProfiles, total] = await Promise.all([
+    prisma.donorProfile.findMany({
+      where: whereConditions,
+      select: {
+        id: true,
+        bloodGroup: true,
+        city: true,
+        address: true,
+        dateOfBirth: true,
+        lastDonationDate: true,
+        availabilityStatus: true,
+
+        user: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      skip,
+      take: limit,
+      orderBy: {
+        [sortBy]: sortOrder,
+      },
+    }),
+    prisma.donorProfile.count({ where: whereConditions }),
+  ]);
+
+  return {
+    data: donorProfiles,
+    meta: buildPaginationMeta(total, { page, limit }),
+  };
+};
+
 const updateUserStatus = async (status: UserStatus, userId: string) => {
+  const { user } = await checkUser(userId);
   const updatedStatus = await prisma.user.update({
     where: {
-      id: userId,
+      id: user.id,
     },
     data: {
-      isActive: status,
+      status: status,
     },
     select: {
       id: true,
       name: true,
       email: true,
       role: true,
-      isActive: true,
     },
   });
 
@@ -111,9 +199,11 @@ const updateUserRole = async (
 
   if (!admin) throw AppError.unauthorized("Only Admin can upadte users role");
 
+  const { user } = await checkUser(userId);
+
   const updatedRole = await prisma.user.update({
     where: {
-      id: userId,
+      id: user.id,
     },
     data: {
       role: newRole,
@@ -123,7 +213,6 @@ const updateUserRole = async (
       name: true,
       email: true,
       role: true,
-      isActive: true,
     },
   });
 
@@ -131,9 +220,11 @@ const updateUserRole = async (
 };
 
 const deleteUser = async (userId: string) => {
-  const user = await prisma.user.findFirst({
+  const { user } = await checkUser(userId);
+
+  const userProfile = await prisma.user.findFirst({
     where: {
-      id: userId,
+      id: user.id,
       isDeleted: false,
     },
     include: {
@@ -141,7 +232,7 @@ const deleteUser = async (userId: string) => {
     },
   });
 
-  if (!user) {
+  if (!userProfile) {
     throw AppError.notFound("Active user not found");
   }
 
@@ -150,12 +241,12 @@ const deleteUser = async (userId: string) => {
       where: { id: user.id },
       data: {
         isDeleted: true,
-        status: "DELETED",
+        status: UserStatus.DELETED,
       },
     });
 
     // Update donor profile ONLY if it exists for this user
-    if (user.donorProfile) {
+    if (userProfile.donorProfile) {
       await tx.donorProfile.update({
         where: { userId: user.id },
         data: {
@@ -167,7 +258,7 @@ const deleteUser = async (userId: string) => {
     // Cancel all active donation assignments linked to this donor
     await tx.donationAssignment.updateMany({
       where: {
-        donorId: user.id,
+        donorId: userProfile.id,
         status: { in: [AssignmentStatus.CREATED, AssignmentStatus.ACCEPTED] },
       },
       data: {
@@ -178,7 +269,7 @@ const deleteUser = async (userId: string) => {
     // Cancel all open blood requests created by this user
     await tx.bloodRequest.updateMany({
       where: {
-        requesterId: user.id,
+        requesterId: userProfile.id,
         status: {
           in: [BloodRequestStatus.PENDING, BloodRequestStatus.APPROVED],
         },
@@ -199,4 +290,5 @@ export const adminServices = {
   updateUserStatus,
   updateUserRole,
   deleteUser,
+  allDonors,
 };
